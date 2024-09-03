@@ -45,11 +45,9 @@ const ClinisistSchema = new mongoose.Schema({
   },
   mobileNum: {
     type: String,
-    required: true
   },
   dob: {
     type: Date,
-    required: true,
     set: (value) => {
       return moment(value, 'DD/MM/YYYY').toDate();
     }
@@ -98,6 +96,11 @@ const ClinisistSchema = new mongoose.Schema({
     type: String,
     required: false,
     default: null
+  },
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    default : null
   }
 });
 

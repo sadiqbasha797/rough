@@ -18,7 +18,7 @@ const registerManager = async (req, res) => {
         });
 
         await manager.save();
-        const token = jwt.sign({ _id: manager._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: manager._id, organization: manager.organization, role:"manager" }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         await createNotification(
             organizationId,               
@@ -73,7 +73,7 @@ const loginManager = async (req, res) => {
             });
         }
 
-        const token = jwt.sign({ _id: manager._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: manager._id, organization: manager.organization, role:"manager" }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.json({
             status: 'success',

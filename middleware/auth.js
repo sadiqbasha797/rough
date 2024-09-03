@@ -6,7 +6,7 @@ const Manager = require('../models/manager');
 const Organization = require('../models/organization');
 const dotenv = require('dotenv');
 
-dotenv.config();
+dotenv.config(); 
 
 const verifyToken = async (req, res, next, userModel, userType) => {
     let token;
