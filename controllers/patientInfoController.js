@@ -1,6 +1,6 @@
 const PatientInfo = require('../models/patientInfo');
 const Patient = require('../models/patient');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const getFixedQuestions = (req, res) => {
     try {

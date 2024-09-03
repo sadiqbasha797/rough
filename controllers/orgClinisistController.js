@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Clinisist = require('../models/Clinisist');
 const createNotification = require('../utils/createNotification');
 const sendEmail = require('../utils/mailUtil');

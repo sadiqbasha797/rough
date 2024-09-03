@@ -1,5 +1,5 @@
 const OrgAdmin = require('../models/orgAdmin');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const createNotification = require('../utils/createNotification'); 
 const sendEmail = require('../utils/mailUtil'); 
