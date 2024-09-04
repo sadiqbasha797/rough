@@ -4,7 +4,6 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const bodyParser = require('body-parser');
-//const Clinisist = require('./models/Clinisist');
 const clinisistRoutes = require('./routes/clinisistRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const passport = require('passport');
@@ -20,10 +19,11 @@ const orgClinisist = require('./routes/orgClinisistRoutes');
 const cors = require('cors');
 
 dotenv.config();
-
 connectDB();
 
 const app = express();
+
+app.use(cors());
 
 app.use(bodyParser.json());
 app.use(passport.initialize());
@@ -39,9 +39,8 @@ app.use('/api/privacy', privacy);
 app.use('/api/organization', organizationRoutes);
 app.use('/api/orgadmin', orgAdmin);
 app.use('/api/manager', manager);
-app.use('/api',forgot);
+app.use('/api', forgot);
 app.use('/api', orgClinisist);
-app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 
