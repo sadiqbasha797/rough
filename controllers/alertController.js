@@ -1,5 +1,6 @@
 const Alert = require('../models/alert');
 const Clinisist = require('../models/Clinisist');
+const createNotification = require('../utils/createNotification'); // Assuming you have this utility
 const calculateDistance = require('../utils/calculateDistance');
 
 const createAlert = async (req, res) => {
@@ -18,6 +19,7 @@ const createAlert = async (req, res) => {
         const patient_mobile_num = req.patient.mobile;
         const patient_name = req.patient.userName;
         const patient_location = { latitude, longitude };
+        const patient_id = req.patient._id;
 
         // Find all clinicians
         const clinisists = await Clinisist.find({});
@@ -60,10 +62,43 @@ const createAlert = async (req, res) => {
         // Save the alert to the database
         await newAlert.save();
 
+        // Send notifications
+        await createNotification(
+            patient_id, 
+            'Patient', 
+            'An alert has been triggered for your current location. Nearest clinician notified.', 
+            nearest.clinisist._id, 
+            'Clinisist', 
+            'alert'
+        );
+
+        await createNotification(
+            nearest.clinisist._id, 
+            'Clinisist', 
+            `An alert has been triggered by ${patient_name}. Please respond immediately.`,
+            patient_id, 
+            'Patient', 
+            'alert'
+        );
+
+        // Prepare the additional alert message (as seen in the image)
+        const alertMessage = {
+            warning: "Suicidal thoughts and behavior are common with some mental illnesses. If you think you may hurt yourself or attempt suicide, get help right away:",
+            steps: [
+                "Call 911 or your local emergency number immediately.",
+                "Call your mental health specialist.",
+                "Call a suicide hotline number. In the U.S., call the National Suicide Prevention Lifeline at 1-800273-TALK (1-800-273-8255) or use its webchat on suicidepreventionlifeline.org/chat.",
+                "Seek help from your primary care provider.",
+                "Reach out to a close friend or loved one.",
+                "Contact a minister, spiritual leader, or someone else in your faith community."
+            ]
+        };
+
+        // Send response with the alert and message
         res.status(201).json({
             status: "success",
-            body: newAlert,
-            message: "Alert created successfully"
+            body: { newAlert, alertMessage },
+            message: "Alert created and notifications sent successfully"
         });
 
     } catch (err) {
