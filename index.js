@@ -16,6 +16,7 @@ const orgAdmin = require('./routes/orgAdminRoutes');
 const manager = require('./routes/managerRoutes');
 const forgot = require('./routes/forgotPassword');
 const orgClinisist = require('./routes/orgClinisistRoutes');
+const color = require('./routes/colorRoutes');
 const cors = require('cors');
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/orgadmin', orgAdmin);
 app.use('/api/manager', manager);
 app.use('/api', forgot);
 app.use('/api', orgClinisist);
+app.use('/api/admin',color);
 
 const PORT = process.env.PORT || 3000;
 

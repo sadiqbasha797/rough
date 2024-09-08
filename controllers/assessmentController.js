@@ -1,6 +1,7 @@
 const s3Util = require('../utils/s3Util');
 const Assessment = require('../models/Assessment');
 const multer = require('multer');
+const Color = require('../models/color');  // Import the Color model
 
 // Multer setup to handle file uploads
 const storage = multer.memoryStorage(); // Store files in memory for direct upload to S3
@@ -9,7 +10,7 @@ const upload = multer({ storage: storage });
 // Create an assessment
 const createAssessment = async (req, res) => {
     try {
-        const { question, answer, type, score, mcqOptions, category } = req.body;
+        const { question, answer, type, score, mcqOptions, category, assessmentType } = req.body;
 
         // Handle media upload if a file is present
         let mediaUrl = null;
@@ -27,6 +28,7 @@ const createAssessment = async (req, res) => {
             type,
             score,
             category,
+            assessmentType,
             mcqOptions: type === 'mcq' ? mcqOptions : []
         });
 
@@ -178,6 +180,63 @@ const getAllAssessments = async (req, res) => {
     }
 };
 
+
+const getMoodAssessments = async (req, res) => {
+    try {
+        console.log('Fetching mood assessments...');
+        const assessments = await Assessment.find({ assessmentType: 'mood' });
+        console.log('Mood assessments:', assessments);
+        if (!assessments.length) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No mood assessments found'
+            });
+        }
+        res.json({
+            status: 'success',
+            body: assessments,
+            message: 'Mood assessments retrieved successfully'
+        });
+    } catch (error) {
+        console.log('Error fetching mood assessments:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'An error occurred while retrieving mood assessments'
+        });
+    }
+};
+
+
+const getBodyAssessments = async (req, res) => {
+    try {
+        const assessments = await Assessment.find({ assessmentType: 'body' });
+        if (!assessments) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No body assessments found'
+            });
+        }
+        res.json({
+            status: 'success',
+            body: assessments,
+            message: 'Body assessments retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching body assessments:', error); // Log the error
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'An error occurred while retrieving body assessments'
+        });
+    }
+};
+
+
+
+
 const takeAssessment = async (req, res) => {
     try {
         const { answers } = req.body; // answers should be an array of objects { questionId, answer }
@@ -222,12 +281,18 @@ const takeAssessment = async (req, res) => {
         // Find the category with the most correct answers
         const maxCategory = Object.entries(categories).reduce((max, entry) => entry[1] > max[1] ? entry : max, ['', 0])[0];
 
+        // If maxCategory is found, fetch its details from the Color (Mood) model
+        let maxCategoryDetails = null;
+        if (maxCategory) {
+            maxCategoryDetails = await Color.findById(maxCategory);
+        }
+
         res.json({
             status: 'success',
             body: {
                 totalScore,
                 correctAnswers,
-                maxCategory
+                mood: maxCategoryDetails // Return the mood details (body of the category)
             },
             message: 'Assessment taken successfully'
         });
@@ -242,6 +307,7 @@ const takeAssessment = async (req, res) => {
 
 
 
+
 module.exports = {
     createAssessment,
     getAllAssessments,
@@ -249,4 +315,6 @@ module.exports = {
     updateAssessment,
     deleteAssessment,
     takeAssessment,
+    getBodyAssessments,
+    getMoodAssessments,
 };

@@ -125,12 +125,6 @@ const getPatientProfile = async (req, res) => {
 
         const patientData = req.patient._doc || req.patient;
 
-        if (patientData.dateOfBirth) {
-            const date = new Date(patientData.dateOfBirth);
-            // Format the date to '13th March 2024'
-            patientData.dateOfBirth = moment(date).format('Do MMMM YYYY');
-        }
-
         res.json({
             status: "success",
             body: patientData,
