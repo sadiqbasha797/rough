@@ -62,10 +62,12 @@ const updatePatientImage = async (req, res) => {
             return res.status(404).json({ error: 'Patient not found' });
         }
 
+       /*
         if (patient.image) {
             const existingKey = patient.image.split('/').pop();
             await s3Util.deleteFile(`patients/${existingKey}`);
         }
+            */
 
         const newImageUrl = await s3Util.uploadFile(fileContent, newKey, req.file.mimetype);
         patient.image = newImageUrl;
