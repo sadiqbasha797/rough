@@ -10,7 +10,7 @@ const upload = multer({ storage: storage });
 // Create an assessment
 const createAssessment = async (req, res) => {
     try {
-        const { question, answer, type, score, mcqOptions, category, assessmentType } = req.body;
+        const { question, answer, type, score, mcqOptions, category } = req.body;
 
         // Handle media upload if a file is present
         let mediaUrl = null;
@@ -28,7 +28,6 @@ const createAssessment = async (req, res) => {
             type,
             score,
             category,
-            assessmentType,
             mcqOptions: type === 'mcq' ? mcqOptions : []
         });
 
@@ -181,58 +180,6 @@ const getAllAssessments = async (req, res) => {
 };
 
 
-const getMoodAssessments = async (req, res) => {
-    try {
-        console.log('Fetching mood assessments...');
-        const assessments = await Assessment.find({ assessmentType: 'mood' });
-        console.log('Mood assessments:', assessments);
-        if (!assessments.length) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No mood assessments found'
-            });
-        }
-        res.json({
-            status: 'success',
-            body: assessments,
-            message: 'Mood assessments retrieved successfully'
-        });
-    } catch (error) {
-        console.log('Error fetching mood assessments:', error);
-        res.status(500).json({
-            status: 'error',
-            body: null,
-            message: 'An error occurred while retrieving mood assessments'
-        });
-    }
-};
-
-
-const getBodyAssessments = async (req, res) => {
-    try {
-        const assessments = await Assessment.find({ assessmentType: 'body' });
-        if (!assessments) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No body assessments found'
-            });
-        }
-        res.json({
-            status: 'success',
-            body: assessments,
-            message: 'Body assessments retrieved successfully'
-        });
-    } catch (error) {
-        console.error('Error fetching body assessments:', error); // Log the error
-        res.status(500).json({
-            status: 'error',
-            body: null,
-            message: 'An error occurred while retrieving body assessments'
-        });
-    }
-};
 
 
 
@@ -315,6 +262,5 @@ module.exports = {
     updateAssessment,
     deleteAssessment,
     takeAssessment,
-    getBodyAssessments,
-    getMoodAssessments,
+   
 };

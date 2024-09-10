@@ -22,7 +22,7 @@ const uploadFile = async (fileContent, key, mimeType) => {
         Key: key,
         Body: fileContent,
         ContentType: mimeType,
-        // ACL: 'public-read', // Remove this line
+        ACL: 'public-read', // Remove this line
     };
 
     const data = await S3.upload(params).promise();

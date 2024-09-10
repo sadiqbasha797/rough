@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const assessmentSchema = new mongoose.Schema({
+// Define the BodyAssessment Schema
+const bodyAssessmentSchema = new Schema({
     question: {
         type: String,
         required: true
@@ -24,6 +25,11 @@ const assessmentSchema = new mongoose.Schema({
         ref: 'Color', // Referencing the Color (mood) model
         required: true
     },
+    part: {
+        type: Schema.Types.ObjectId,
+        ref: 'Body', // Referencing the Body model
+        required: true
+    },
     media: {
         type: String,
         default: null,
@@ -31,10 +37,9 @@ const assessmentSchema = new mongoose.Schema({
     mcqOptions: [{
         text: { type: String, required: false },
         isCorrect: { type: Boolean, required: false, default: false }
-    }],
-  
+    }]
 });
 
-const Assessment = mongoose.model('Assessment', assessmentSchema);
+const BodyAssessment = mongoose.model('BodyAssessment', bodyAssessmentSchema);
 
-module.exports = Assessment;
+module.exports = BodyAssessment;

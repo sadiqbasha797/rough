@@ -17,6 +17,8 @@ const manager = require('./routes/managerRoutes');
 const forgot = require('./routes/forgotPassword');
 const orgClinisist = require('./routes/orgClinisistRoutes');
 const color = require('./routes/colorRoutes');
+const body = require('./routes/bodyRoutes');
+const bodyassessments = require('./routes/bodyAssessmentRoutes');
 const cors = require('cors');
 
 dotenv.config();
@@ -43,9 +45,14 @@ app.use('/api/manager', manager);
 app.use('/api', forgot);
 app.use('/api', orgClinisist);
 app.use('/api/admin',color);
-
+app.use('/api/admin/', body);
+app.use('/api',bodyassessments);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log(`app running on ${PORT}`);
 });
+
+//AWS_ACCESS_KEY_ID = AKIA5TZI3C6UQ7XJHPN6
+//AWS_SECRET_ACCESS_KEY = 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
+//AWS_REGION = us-east-1
