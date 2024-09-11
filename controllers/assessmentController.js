@@ -1,9 +1,8 @@
 const s3Util = require('../utils/s3Util');
 const Assessment = require('../models/Assessment');
 const multer = require('multer');
-const Color = require('../models/color');  // Import the Color model
+const Color = require('../models/color');  
 
-// Multer setup to handle file uploads
 const storage = multer.memoryStorage(); // Store files in memory for direct upload to S3
 const upload = multer({ storage: storage });
 
