@@ -1,4 +1,4 @@
-const Color = require('../models/color');
+const Color = require('../models/Color');
 
 // Controller to create a new mood
 const createMood = async (req, res) => {

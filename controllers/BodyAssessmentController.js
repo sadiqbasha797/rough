@@ -1,5 +1,5 @@
 const BodyAssessment = require('../models/BodyAssessment');  // Import the BodyAssessment model
-const Color = require('../models/color');  // Import the Color model if needed
+const Color = require('../models/Color');  // Import the Color model if needed
 
 // Create a body assessment
 const createBodyAssessment = async (req, res) => {
