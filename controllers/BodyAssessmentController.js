@@ -202,6 +202,45 @@ const getQuestionsByPart = async (req, res) => {
     }
 };
 
+// Fetch questions based on part(s)
+const getQuestionsByParts = async (req, res) => {
+    try {
+        const { partIds } = req.body; // partIds should be an array of part IDs
+
+        // Validate partIds
+        if (!Array.isArray(partIds) || partIds.length === 0) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Part IDs are required and should be an array'
+            });
+        }
+
+        // Find questions that match any of the part IDs
+        const questions = await BodyAssessment.find({ part: { $in: partIds } });
+
+        if (!questions.length) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No questions found for the given parts'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            body: questions,
+            message: 'Questions retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching questions by parts:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'An error occurred while fetching questions'
+        });
+    }
+};
 
 // Take a Body Assessment
 const takeBodyAssessment = async (req, res) => {
@@ -283,5 +322,6 @@ module.exports = {
     deleteBodyAssessment,
     getBodyAssessmentsByCategory,
     takeBodyAssessment,
-    getQuestionsByPart
+    getQuestionsByPart,
+    getQuestionsByParts
 };

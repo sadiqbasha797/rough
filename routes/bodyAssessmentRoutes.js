@@ -8,7 +8,8 @@ const {
     deleteBodyAssessment,
     getBodyAssessmentsByCategory,
     takeBodyAssessment,
-    getQuestionsByPart
+    getQuestionsByPart,
+    getQuestionsByParts
 } = require('../controllers/BodyAssessmentController');
 router.post('/bodytest', createBodyAssessment);
 router.get('/bodytest', getAllBodyAssessments);
@@ -18,5 +19,6 @@ router.delete('/bodytest/:id', deleteBodyAssessment);
 router.get('/bodytest/category/:categoryId', getBodyAssessmentsByCategory);
 router.post('/bodytest/take', takeBodyAssessment);
 router.get('/questions/:partId', getQuestionsByPart);
+router.post('/questions-by-parts', getQuestionsByParts);
 
 module.exports = router;
