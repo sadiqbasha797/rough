@@ -253,7 +253,7 @@ const getNearestDoctors = async (req, res) => {
 
     try {
         console.log("Finding nearest doctors for coordinates:", latitude, longitude);
-        
+
         const patientId = req.patient._id;
 
         // Fetch all subscriptions of the patient, including plan details
@@ -261,7 +261,11 @@ const getNearestDoctors = async (req, res) => {
         const subscribedClinisistMap = new Map();
 
         subscriptions.forEach(sub => {
-            subscribedClinisistMap.set(sub.clinisist.toString(), sub.plan);
+            if (sub.clinisist) {  // Check if clinisist is not null
+                subscribedClinisistMap.set(sub.clinisist.toString(), sub.plan);
+            } else {
+                console.warn(`Subscription with ID ${sub._id} has no associated clinisist.`);
+            }
         });
 
         const clinisists = await Clinisist.find({});

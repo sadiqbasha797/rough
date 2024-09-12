@@ -1,12 +1,12 @@
-const BodyAssessment = require('../models/BodyAssessment');  // Import the BodyAssessment model
-const Color = require('../models/Color');  // Import the Color model if needed
+const BodyAssessment = require('../models/BodyAssessment');  
+const Color = require('../models/Color');  
 
 // Create a body assessment
 const createBodyAssessment = async (req, res) => {
     try {
         const { question, answer, type, score, mcqOptions, category, part } = req.body;
 
-        // Create new body ass  essment
+        
         const newBodyAssessment = new BodyAssessment({
             question,
             answer,
