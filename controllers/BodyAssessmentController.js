@@ -4,17 +4,21 @@ const Color = require('../models/Color');
 // Create a body assessment
 const createBodyAssessment = async (req, res) => {
     try {
-        const { question, answer, type, score, mcqOptions, category, part } = req.body;
+        const { question, answer, type, score, mcqOptions, part } = req.body;
 
-        
+        // Ensure mcqOptions have the required structure with a color reference
+        const formattedMcqOptions = mcqOptions.map(option => ({
+            text: option.text,
+            color: option.color
+        }));
+
         const newBodyAssessment = new BodyAssessment({
             question,
             answer,
             type,
             score,
-            category,
             part,
-            mcqOptions: type === 'mcq' ? mcqOptions : []
+            mcqOptions: type === 'mcq' ? formattedMcqOptions : []
         });
 
         await newBodyAssessment.save();
@@ -37,7 +41,22 @@ const createBodyAssessment = async (req, res) => {
 // Update a body assessment
 const updateBodyAssessment = async (req, res) => {
     try {
-        const updatedBodyAssessment = await BodyAssessment.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const { mcqOptions, ...restBody } = req.body;
+
+        // Format mcqOptions with color reference if provided
+        const formattedMcqOptions = mcqOptions
+            ? mcqOptions.map(option => ({
+                text: option.text,
+                color: option.color
+            }))
+            : undefined;
+
+        const updatedData = { ...restBody };
+        if (formattedMcqOptions) {
+            updatedData.mcqOptions = formattedMcqOptions;
+        }
+
+        const updatedBodyAssessment = await BodyAssessment.findByIdAndUpdate(req.params.id, updatedData, { new: true });
 
         if (!updatedBodyAssessment) {
             return res.status(404).json({
@@ -60,6 +79,7 @@ const updateBodyAssessment = async (req, res) => {
         });
     }
 };
+
 
 // Fetch body assessment by ID
 const getBodyAssessmentById = async (req, res) => {
@@ -255,8 +275,8 @@ const takeBodyAssessment = async (req, res) => {
             });
         }
 
-        const assessments = await BodyAssessment.find({});
-        const categories = {};
+        const assessments = await BodyAssessment.find({}).populate('mcqOptions.color'); // Populate color for mcqOptions
+        const colorTally = {};
         let totalScore = 0;
         let correctAnswers = 0;
 
@@ -265,32 +285,30 @@ const takeBodyAssessment = async (req, res) => {
             if (!assessment) continue;
 
             if (assessment.type === 'mcq') {
-                const correctOption = assessment.mcqOptions.find(option => option.isCorrect);
-                if (correctOption && correctOption.text === answer.answer) {
-                    totalScore += assessment.score;
+                const selectedOption = assessment.mcqOptions.find(option => option.text === answer.answer);
+                if (selectedOption) {
+                    totalScore += assessment.score; // Since all options are correct, add score for any selection
                     correctAnswers++;
-                    if (assessment.category) {
-                        categories[assessment.category] = (categories[assessment.category] || 0) + 1;
-                    }
+
+                    // Track the color frequency in the answers
+                    const colorId = selectedOption.color._id.toString();
+                    colorTally[colorId] = (colorTally[colorId] || 0) + 1;
                 }
             } else if (assessment.type === 'blanks') {
                 if (assessment.answer === answer.answer) {
                     totalScore += assessment.score;
                     correctAnswers++;
-                    if (assessment.category) {
-                        categories[assessment.category] = (categories[assessment.category] || 0) + 1;
-                    }
                 }
             }
         }
 
-        // Find the category with the most correct answers
-        const maxCategory = Object.entries(categories).reduce((max, entry) => entry[1] > max[1] ? entry : max, ['', 0])[0];
+        // Find the most selected color (max category)
+        const maxCategoryId = Object.entries(colorTally).reduce((max, entry) => entry[1] > max[1] ? entry : max, ['', 0])[0];
 
-        // If maxCategory is found, fetch its details from the Color model
+        // Fetch the full details of the most selected category (color)
         let maxCategoryDetails = null;
-        if (maxCategory) {
-            maxCategoryDetails = await Color.findById(maxCategory);
+        if (maxCategoryId) {
+            maxCategoryDetails = await Color.findById(maxCategoryId);
         }
 
         res.json({
@@ -298,8 +316,8 @@ const takeBodyAssessment = async (req, res) => {
             body: {
                 totalScore,
                 correctAnswers,
-                maxCategory,
-                maxCategoryDetails // Return the full details of the category
+                maxCategory: maxCategoryId,
+                maxCategoryDetails // Return the full details of the most selected category (color)
             },
             message: 'Body Assessment taken successfully'
         });
@@ -312,6 +330,7 @@ const takeBodyAssessment = async (req, res) => {
         });
     }
 };
+
 
 
 module.exports = {

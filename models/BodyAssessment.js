@@ -20,11 +20,6 @@ const bodyAssessmentSchema = new Schema({
         type: Number,
         required: true
     },
-    category: {
-        type: Schema.Types.ObjectId,
-        ref: 'Color', // Referencing the Color (mood) model
-        required: true
-    },
     part: {
         type: Schema.Types.ObjectId,
         ref: 'Body', // Referencing the Body model
@@ -36,7 +31,7 @@ const bodyAssessmentSchema = new Schema({
     },
     mcqOptions: [{
         text: { type: String, required: false },
-        isCorrect: { type: Boolean, required: false, default: false }
+        color: { type: Schema.Types.ObjectId, ref: 'Color', required: true } // Each option associated with a Color
     }]
 });
 
