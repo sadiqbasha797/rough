@@ -5,7 +5,7 @@ const sendEmail = require('../utils/mailUtil');
 
 // Handler for registering a Clinisist by an Organization
 const registerClinisistOrganization = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, createdBy } = req.body;
 
     try {
         const organizationId = req.organization._id;
@@ -19,14 +19,11 @@ const registerClinisistOrganization = async (req, res) => {
                 message: 'Clinisist already exists'
             });
         }
-
-        // Hash the password before saving
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create new Clinisist instance
         const clinisist = new Clinisist({
             name,
             email,
+            createdBy : req.organization._id,
             password: hashedPassword,
             organization: organizationId,
         });
@@ -58,7 +55,7 @@ const registerClinisistOrganization = async (req, res) => {
 
 // Handler for registering a Clinisist by an OrgAdmin
 const registerClinisistOrgAdmin = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, createdBy } = req.body;
 
     try {
         const organizationId = req.orgAdmin.organization;
@@ -79,6 +76,7 @@ const registerClinisistOrgAdmin = async (req, res) => {
         const clinisist = new Clinisist({
             name,
             email,
+            createdBy : req.orgAdmin._id,
             password: hashedPassword,
             organization: organizationId,
         });
@@ -108,7 +106,7 @@ const registerClinisistOrgAdmin = async (req, res) => {
 
 // Handler for registering a Clinisist by a Manager
 const registerClinisistManager = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, createdBy } = req.body;
 
     try {
         const organizationId = req.manager.organization;
@@ -128,6 +126,7 @@ const registerClinisistManager = async (req, res) => {
         const clinisist = new Clinisist({
             name,
             email,
+            createdBy : req.manager._id,
             password: hashedPassword,
             organization: organizationId,
         });
@@ -155,4 +154,8 @@ const registerClinisistManager = async (req, res) => {
     }
 };
 
-module.exports = { registerClinisistOrganization, registerClinisistOrgAdmin, registerClinisistManager };
+module.exports = { 
+    registerClinisistOrganization, 
+    registerClinisistOrgAdmin, 
+    registerClinisistManager,
+};

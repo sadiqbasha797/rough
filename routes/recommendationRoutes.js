@@ -10,7 +10,8 @@ const {
     getRecommendationById,
     updateRecommendation,
     deleteRecommendation,
-    createDoctorRecommendation
+    createDoctorRecommendation,
+    deleteMedia
 } = require('../controllers/recommendationController');
 
 // Routes
@@ -22,4 +23,6 @@ router.put('/recommendations/:id', adminAuth, updateRecommendation);
 router.delete('/recommendations/:id', adminAuth, deleteRecommendation);
 router.get('/doctor_recommendations/:category', getDoctorRecommendations);
 router.get('/portal_recommendations/:category', getPortalRecommendations);
+router.delete('/recommendations/:recommendationId/media/:mediaType/:mediaId', deleteMedia);
+
 module.exports = router;

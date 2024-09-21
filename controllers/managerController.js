@@ -74,10 +74,10 @@ const loginManager = async (req, res) => {
         }
 
         const token = jwt.sign({ id: manager._id, organization: manager.organization, role:"manager" }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
+        const role = "Manager";
         res.json({
             status: 'success',
-            body: { token, manager },
+            body: { token, manager, role },
             message: 'Manager logged in successfully'
         });
     } catch (err) {
@@ -145,10 +145,124 @@ const deleteManager = async (req, res) => {
     }
 };
 
+// Fetch All Managers of a Particular Organization
+const getAllManagersByOrganization = async (req, res) => {
+    try {
+        const organizationId  = req.organization._id; 
+        const managers = await Manager.find({ organization: organizationId });
+
+        if (!managers || managers.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No managers found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: managers,
+            message: 'Managers retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching managers: ' + error.message
+        });
+    }
+};
+
+// Fetch Active Managers of a Particular Organization
+const getActiveManagersByOrganization = async (req, res) => {
+    try {
+        const organizationId  = req.organization._id; 
+        const activeManagers = await Manager.find({ organization: organizationId, Active: 'yes' });
+
+        if (!activeManagers || activeManagers.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No active managers found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: activeManagers,
+            message: 'Active managers retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching active managers: ' + error.message
+        });
+    }
+};
+
+// Fetch Inactive Managers of a Particular Organization
+const getInactiveManagersByOrganization = async (req, res) => {
+    try {
+        const organizationId  = req.organization._id; 
+        const inactiveManagers = await Manager.find({ organization: organizationId, Active: 'no' });
+
+        if (!inactiveManagers || inactiveManagers.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No inactive managers found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: inactiveManagers,
+            message: 'Inactive managers retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching inactive managers: ' + error.message
+        });
+    }
+};
+
+// Fetch Counts of Active, Inactive, and Total Managers of a Particular Organization
+const getManagersCountByOrganization = async (req, res) => {
+    try {
+        const organizationId  = req.organization._id; 
+        const totalManagers = await Manager.countDocuments({ organization: organizationId });
+        const activeManagersCount = await Manager.countDocuments({ organization: organizationId, Active: 'yes' });
+        const inactiveManagersCount = await Manager.countDocuments({ organization: organizationId, Active: 'no' });
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                total: totalManagers,
+                active: activeManagersCount,
+                inactive: inactiveManagersCount
+            },
+            message: 'Manager counts retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching manager counts: ' + error.message
+        });
+    }
+};
+
 module.exports = {
     registerManager,
     loginManager,
     getManagerDetails,
     updateManager,
     deleteManager,
+    getAllManagersByOrganization, 
+    getActiveManagersByOrganization, 
+    getInactiveManagersByOrganization, 
+    getManagersCountByOrganization 
 };

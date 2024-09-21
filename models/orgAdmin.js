@@ -27,9 +27,13 @@ const orgAdminSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    Active : {
+        type : String,
+        default : "yes"
+    }
     
 }, {
-    timestamps: true, // Automatically adds `createdAt` and `updatedAt` fields
+    timestamps: true, 
 });
 
 const OrgAdmin = mongoose.model('OrgAdmin', orgAdminSchema);

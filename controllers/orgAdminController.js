@@ -75,10 +75,10 @@ const loginOrgAdmin = async (req, res) => {
         }
 
         const token = jwt.sign({ id: orgAdmin._id, role: 'orgAdmin', organization: orgAdmin.organization }, process.env.JWT_SECRET);
-
+        const role = "orgAdmin";
         res.json({
             status: 'success',
-            body: { token, orgAdmin },
+            body: { token, orgAdmin, role },
             message: 'OrgAdmin logged in successfully'
         });
     } catch (err) {
@@ -146,10 +146,157 @@ const deleteOrgAdmin = async (req, res) => {
     }
 };
 
+
+const getOrgAdminsByOrganization = async (req, res) => {
+    try {
+        const organizationId  = req.organization._id;  // Get organizationId from request params
+
+        const orgAdmins = await OrgAdmin.find({ organization: organizationId });
+
+        if (!orgAdmins || orgAdmins.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No org admins found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: orgAdmins,
+            message: 'Org admins retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching org admins: ' + error.message
+        });
+    }
+};
+
+const getOrgAdminCounts = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;  // Get organizationId from request params
+
+        const totalAdmins = await OrgAdmin.countDocuments({ organization: organizationId });
+        const activeAdmins = await OrgAdmin.countDocuments({ organization: organizationId, Active: 'yes' });
+        const inactiveAdmins = await OrgAdmin.countDocuments({ organization: organizationId, Active: 'no' });
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                totalAdmins,
+                activeAdmins,
+                inactiveAdmins
+            },
+            message: 'Org admin counts retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching org admin counts: ' + error.message
+        });
+    }
+};
+
+// Fetch All OrgAdmins of a Particular Organization
+const getAllOrgAdminsByOrganization = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;  // Get organizationId from request params
+
+        const orgAdmins = await OrgAdmin.find({ organization: organizationId });
+
+        if (!orgAdmins || orgAdmins.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No org admins found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: orgAdmins,
+            message: 'Org admins retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching org admins: ' + error.message
+        });
+    }
+};
+
+// Fetch Active OrgAdmins of a Particular Organization
+const getActiveOrgAdminsByOrganization = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;  // Get organizationId from request params
+
+        const activeOrgAdmins = await OrgAdmin.find({ organization: organizationId, Active: 'yes' });
+
+        if (!activeOrgAdmins || activeOrgAdmins.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No active org admins found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: activeOrgAdmins,
+            message: 'Active org admins retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching active org admins: ' + error.message
+        });
+    }
+};
+
+// Fetch Inactive OrgAdmins of a Particular Organization
+const getInactiveOrgAdminsByOrganization = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;  // Get organizationId from request params
+
+        const inactiveOrgAdmins = await OrgAdmin.find({ organization: organizationId, Active: 'no' });
+
+        if (!inactiveOrgAdmins || inactiveOrgAdmins.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No inactive org admins found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: inactiveOrgAdmins,
+            message: 'Inactive org admins retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching inactive org admins: ' + error.message
+        });
+    }
+};
+
 module.exports = {
     registerOrgAdmin,
     loginOrgAdmin,
     getOrgAdminDetails,
     updateOrgAdmin,
     deleteOrgAdmin,
+    getAllOrgAdminsByOrganization, 
+    getActiveOrgAdminsByOrganization, 
+    getInactiveOrgAdminsByOrganization ,
+    getOrgAdminCounts,
+    getOrgAdminsByOrganization
 };

@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const createNotification = require('../utils/createNotification'); // Import the notification helper
 const sendEmail = require('../utils/mailUtil'); // Import the mail utility
+const Clinisist = require('../models/Clinisist');
 
 const registerOrganization = async (req, res) => {
     const { name, email, password } = req.body;
@@ -94,6 +95,7 @@ const loginOrganization = async (req, res) => {
             { organization: { id: organization._id, name: organization.name } },
             process.env.JWT_SECRET,
         );
+        const role = "Organization"
 
         res.json({
             status: 'success',
@@ -102,7 +104,8 @@ const loginOrganization = async (req, res) => {
                     id : organization._id,
                     name : organization.name,
                     email : organization.email,
-                    token
+                    token,
+                    role
                 }
              },
             message: 'Organization authenticated successfully'
@@ -134,8 +137,210 @@ const getOrganization = async (req, res) => {
     }
 };
 
+// Fetch all Clinisists for a particular organization
+const getClinisistsByOrganization = async (req, res) => {
+    try {
+        const  organizationId  = req.organization._id;
+        console.log(organizationId);
+        const clinisists = await Clinisist.find({ organization: organizationId });
+        if (!clinisists.length) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No Clinisists found for the specified organization'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            body: clinisists,
+            message: 'Clinisists retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching Clinisists:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching Clinisists'
+        });
+    }
+};
+
+const getActiveClinisistsByOrganization = async (req, res) => {
+    try {
+        const  organizationId  = req.organization._id;
+        const activeClinisists = await Clinisist.find({ organization: organizationId, Active: 'yes' });
+
+        if (!activeClinisists.length) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No active Clinisists found for the specified organization'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            body: activeClinisists,
+            message: 'Active Clinisists retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching active Clinisists:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching active Clinisists'
+        });
+    }
+};
+
+const getInactiveClinisistsByOrganization = async (req, res) => {
+    try {
+        const  organizationId  = req.organization._id;
+        const inactiveClinisists = await Clinisist.find({ organization: organizationId, Active: 'no' });
+
+        if (!inactiveClinisists.length) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No inactive Clinisists found for the specified organization'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            body: inactiveClinisists,
+            message: 'Inactive Clinisists retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching inactive Clinisists:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching inactive Clinisists'
+        });
+    }
+};
+
+const getClinisistCountByOrganization = async (req, res) => {
+    try {
+        const  organizationId  = req.organization._id;
+        const activeCount = await Clinisist.countDocuments({ organization: organizationId, Active: 'yes' });
+        const inactiveCount = await Clinisist.countDocuments({ organization: organizationId, Active: 'no' });
+        const total = activeCount + inactiveCount;
+        res.json({
+            status: 'success',
+            body: { activeCount, inactiveCount, total },
+            message: 'Clinisist counts retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching Clinisist counts:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching Clinisist counts'
+        });
+    }
+};
+
+const getCreatedByClinisist = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        const clinisists = await Clinisist.find({ createdBy: organizationId });
+
+        if (!clinisists || clinisists.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No clinisists found for this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: clinisists,
+            message: 'Clinisists retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching clinisists: ' + error.message
+        });
+    }
+};
+
+// ... existing code ...
+
+const Subscription = require('../models/subscription');
+const Patient = require('../models/patient');
+
+// Add this new function to the organizationController
+const getSubscribedPatients = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+
+        // Find all clinicians belonging to this organization
+        const clinicians = await Clinisist.find({ organization: organizationId });
+        const clinicianIds = clinicians.map(clinician => clinician._id);
+
+        // Find all subscriptions for these clinicians
+        const subscriptions = await Subscription.find({
+            clinisist: { $in: clinicianIds }
+        }).populate('patient').populate('clinisist');
+
+        // Group patients by clinician
+        const patientsByClinician = {};
+
+        subscriptions.forEach(subscription => {
+            const clinicianId = subscription.clinisist._id.toString();
+            const patientData = subscription.patient;
+
+            if (!patientsByClinician[clinicianId]) {
+                patientsByClinician[clinicianId] = {
+                    clinician: {
+                        id: subscription.clinisist._id,
+                        name: subscription.clinisist.name
+                    },
+                    patients: []
+                };
+            }
+
+            patientsByClinician[clinicianId].patients.push({
+                id: patientData._id,
+                name: patientData.userName,
+                email: patientData.email
+            });
+        });
+
+        const result = Object.values(patientsByClinician);
+
+        res.status(200).json({
+            status: 'success',
+            body: result,
+            message: 'Subscribed patients retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching subscribed patients:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching subscribed patients'
+        });
+    }
+};
+
+// ... existing code ...
+
+
 module.exports = {
+    getClinisistsByOrganization,
     registerOrganization,
     loginOrganization,
     getOrganization,
+    getActiveClinisistsByOrganization,
+    getInactiveClinisistsByOrganization, 
+    getClinisistCountByOrganization,
+    getCreatedByClinisist,
+    getSubscribedPatients
 };

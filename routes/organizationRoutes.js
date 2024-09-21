@@ -1,16 +1,47 @@
 const express = require('express');
-const { registerOrganization, loginOrganization, getOrganization } = require('../controllers/organizationController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { 
+    registerOrganization, 
+    loginOrganization, 
+    getOrganization,
+    getClinisistsByOrganization,
+    getActiveClinisistsByOrganization,
+    getInactiveClinisistsByOrganization, 
+    getClinisistCountByOrganization,
+    getCreatedByClinisist,
+    getSubscribedPatients
+ } = require('../controllers/organizationController');
 
-const router = express.Router();
+ const {
+    getActiveOrgAdminsByOrganization, 
+    getInactiveOrgAdminsByOrganization ,
+    getOrgAdminCounts,
+    getOrgAdminsByOrganization
+} = require('../controllers/orgAdminController');
 
-// Register a new organization
+ const {
+    getAllManagersByOrganization, 
+    getActiveManagersByOrganization, 
+    getInactiveManagersByOrganization, 
+    getManagersCountByOrganization 
+ } = require('../controllers/managerController');
+
+ const {authenticateOrgAdmin, authOrganization} = require('../middleware/auth');
+ const router = express.Router();
 router.post('/register', registerOrganization);
-
-// Login an organization
 router.post('/login', loginOrganization);
-
-// Get organization details (requires authentication)
-router.get('/me', authMiddleware, getOrganization);
-
+router.get('/me', authOrganization, getOrganization);
+router.get('/doctors',authOrganization, getClinisistsByOrganization);
+router.get('/doctors/active',authOrganization, getActiveClinisistsByOrganization);
+router.get('/doctors/inactive',authOrganization, getInactiveClinisistsByOrganization);
+router.get('/doctors/count',authOrganization, getClinisistCountByOrganization);
+router.get('/my-doctors',authOrganization, getCreatedByClinisist);
+router.get('/orgadmins',authOrganization, getOrgAdminsByOrganization); 
+router.get('/orgadmins/counts',authOrganization, getOrgAdminCounts); 
+router.get('/orgadmins/active',authOrganization, getActiveOrgAdminsByOrganization);  // Get active org admins of a particular organization
+router.get('/orgadmins/inactive',authOrganization, getInactiveOrgAdminsByOrganization);  // Get inactive org admins of a particular organization
+router.get('/managers',authOrganization, getAllManagersByOrganization);  // Get all managers of a particular organization
+router.get('/managers/active',authOrganization, getActiveManagersByOrganization);  // Get active managers of a particular organization
+router.get('/managers/inactive',authOrganization, getInactiveManagersByOrganization);  // Get inactive managers of a particular organization
+router.get('/managers/counts',authOrganization, getManagersCountByOrganization);  // Get counts of active, inactive, and total managers
+router.get('/subscribed-patients', authOrganization, getSubscribedPatients);
 module.exports = router;

@@ -272,6 +272,7 @@ const getNearestDoctors = async (req, res) => {
         console.log("Total clinicians found:", clinisists.length);
 
         const nearestClinisists = clinisists
+            .filter(clinisist => clinisist.address && clinisist.address.latitude && clinisist.address.longitude) // Ensure valid address exists
             .map(clinisist => {
                 const distance = calculateDistance(
                     latitude,
@@ -308,6 +309,7 @@ const getNearestDoctors = async (req, res) => {
         });
     }
 };
+
 
 
 const updatePatient = async (req, res) => {

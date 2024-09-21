@@ -3,55 +3,53 @@ const bcrypt = require('bcryptjs');
 const Plan = require('../models/plan');
 const Patient = require('../models/patient');
 const Notification = require('../models/Notification');
-const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const moment = require('moment');
-
-// Cloudinary configuration
-cloudinary.config({
-    cloud_name: 'dmst4lbrx',
-    api_key: '828194579658255',
-    api_secret: '4hij7lz9E3GNXkFgGW6XnvJ1DFo'
-});
-
-// Multer storage configuration for Cloudinary
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'doctor_images', // Cloudinary folder
-        allowedFormats: ['jpg', 'png'],
-    },
-});
-
+const AWS = require('aws-sdk');
+const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
+const storage = multer.memoryStorage(); // Store files in memory temporarily
 const upload = multer({ storage: storage });
 
+// Update Doctor's Image using S3
 const updateDoctorImage = async (req, res) => {
-    const patientId = req.params.id;
+    const clinisistId = req.params.id;
 
     try {
-        const patient = await Clinisist.findById(patientId);
-        if (!patient) {
-            return res.status(404).json({ message: 'Patient not found' });
+        const clinisist = await Clinisist.findById(clinisistId);
+        if (!clinisist) {
+            return res.status(404).json({ message: 'Clinisist not found' });
         }
 
         if (!req.file) {
             return res.status(400).json({ message: 'No image file uploaded' });
         }
 
-        // Update patient's image with the Cloudinary URL
-        patient.image = req.file.path;
-        await patient.save();
+        // Generate a unique key (filename) for the S3 bucket
+        const fileKey = `doctor_images/${Date.now()}_${req.file.originalname}`;
 
-        res.status(200).json({ 
+        // Upload the file to S3
+        const imageUrl = await uploadFile(req.file.buffer, fileKey, req.file.mimetype);
+
+        // Optionally, delete the previous image from S3 if exists
+        if (clinisist.image) {
+            const previousKey = clinisist.image.split('/').pop();
+            await deleteFile(`doctor_images/${previousKey}`);
+        }
+
+        // Update Clinisist's image with the new S3 URL
+        clinisist.image = imageUrl;
+        await clinisist.save();
+
+        res.status(200).json({
             message: 'Image updated successfully',
-            imageUrl: patient.image
+            imageUrl: clinisist.image
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
     }
 };
+
 const getClinisistProfile = async (req, res) => {
     try {
         // Ensure we are working with a plain JavaScript object
@@ -168,7 +166,7 @@ const getNotifications = async (req, res) => {
 
 const updateDoctor = async (req, res) => {
     try {
-        const { name, email, mobileNum, dob, specializedIn, address, about, services, ratings, experince, location, careerpath, highlights } = req.body;
+        const {Active, name, email, mobileNum, dob, specializedIn, address, about, services, ratings, experince, location, careerpath, highlights } = req.body;
         
         // Find the clinisist by ID (extracted from the token by middleware)
         const clinisist = await Clinisist.findById(req.clinisist._id);
@@ -179,6 +177,7 @@ const updateDoctor = async (req, res) => {
 
         // Update the fields (excluding password, image, licenseImage, verified)
         clinisist.name = name || clinisist.name;
+        clinisist.Active = Active || clinisist.Active;
         clinisist.email = email || clinisist.email;
         clinisist.mobileNum = mobileNum || clinisist.mobileNum;
         clinisist.dob = dob || clinisist.dob;

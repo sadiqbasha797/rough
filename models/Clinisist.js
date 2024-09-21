@@ -1,14 +1,13 @@
 const mongoose = require('mongoose');
-const moment = require('moment');
 
-// Define schema for individual career path entries
+// Define career path schema
 const careerPathSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
   },
   duration: {
-    type: String,  // Assuming a string format like "2020-2022"
+    type: String,
     required: true,
   },
   description: {
@@ -18,7 +17,7 @@ const careerPathSchema = new mongoose.Schema({
   }
 });
 
-// Address schema remains the same
+// Define address schema
 const addressSchema = new mongoose.Schema({
   latitude: {
     type: Number,
@@ -30,6 +29,7 @@ const addressSchema = new mongoose.Schema({
   }
 });
 
+// Main Clinisist schema
 const ClinisistSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -48,9 +48,6 @@ const ClinisistSchema = new mongoose.Schema({
   },
   dob: {
     type: Date,
-    set: (value) => {
-      return moment(value, 'DD/MM/YYYY').toDate();
-    }
   },
   password: {
     type: String,
@@ -91,7 +88,7 @@ const ClinisistSchema = new mongoose.Schema({
     required: false,
     default: null,
   },
-  careerpath: [careerPathSchema],  // Use an array of careerPathSchema to store multiple entries
+  careerpath: [careerPathSchema],  // Array of career paths
   highlights: {
     type: String,
     required: false,
@@ -100,9 +97,17 @@ const ClinisistSchema = new mongoose.Schema({
   organization: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Organization',
-    default : null
+    default: null
+  },
+  Active: {
+    type: String,
+    default: 'yes'
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
   }
-});
+}, { timestamps: true }); 
 
 const Clinisist = mongoose.model('Clinisist', ClinisistSchema);
 

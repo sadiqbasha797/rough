@@ -32,11 +32,21 @@ const createAlert = async (req, res) => {
             });
         }
 
-        // Calculate distance for each clinician
-        const distances = clinisists.map(clinisist => ({
-            clinisist,
-            distance: calculateDistance(latitude, longitude, clinisist.address.latitude, clinisist.address.longitude)
-        }));
+        // Calculate distance for each clinician, checking if address exists
+        const distances = clinisists
+            .filter(clinisist => clinisist.address && clinisist.address.latitude && clinisist.address.longitude) // Ensure valid address
+            .map(clinisist => ({
+                clinisist,
+                distance: calculateDistance(latitude, longitude, clinisist.address.latitude, clinisist.address.longitude)
+            }));
+
+        if (distances.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: "No clinicians with valid location found"
+            });
+        }
 
         // Find the nearest clinician(s)
         const minDistance = Math.min(...distances.map(d => d.distance));
@@ -81,13 +91,13 @@ const createAlert = async (req, res) => {
             'alert'
         );
 
-        // Prepare the additional alert message (as seen in the image)
+        // Prepare the additional alert message
         const alertMessage = {
             warning: "Suicidal thoughts and behavior are common with some mental illnesses. If you think you may hurt yourself or attempt suicide, get help right away:",
             steps: [
                 "Call 911 or your local emergency number immediately.",
                 "Call your mental health specialist.",
-                "Call a suicide hotline number. In the U.S., call the National Suicide Prevention Lifeline at 1-800273-TALK (1-800-273-8255) or use its webchat on suicidepreventionlifeline.org/chat.",
+                "Call a suicide hotline number. In the U.S., call the National Suicide Prevention Lifeline at 1-800-273-TALK (1-800-273-8255) or use its webchat on suicidepreventionlifeline.org/chat.",
                 "Seek help from your primary care provider.",
                 "Reach out to a close friend or loved one.",
                 "Contact a minister, spiritual leader, or someone else in your faith community."

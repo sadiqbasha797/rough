@@ -1,39 +1,10 @@
 const Recommendation = require('../models/Recommendation');
-const cloudinary = require('cloudinary').v2;
+const s3Util = require('../utils/s3Util');
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const Clinisist = require('../models/Clinisist');
-const moment = require('moment');
+const { v4: uuidv4 } = require('uuid'); // For generating unique file names
 
-// Cloudinary configuration
-cloudinary.config({
-    cloud_name: 'dmst4lbrx',
-    api_key: '828194579658255',
-    api_secret: '4hij7lz9E3GNXkFgGW6XnvJ1DFo'
-});
-
-
-
-// Multer storage configuration for Cloudinary
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: (req, file) => {
-        let folder = 'recommendation_media';
-        if (file.fieldname === 'images') {
-            folder += '/images';
-        } else if (file.fieldname === 'documents') {
-            folder += '/documents';
-        } else if (file.fieldname === 'videos') {
-            folder += '/videos';
-        }
-
-        return {
-            folder: folder, // Folder in Cloudinary
-            resource_type: file.fieldname === 'documents' ? 'raw' : 'auto', // Supports auto type for images, videos, etc.
-        };
-    }
-});
-
+// Multer setup to handle file uploads
+const storage = multer.memoryStorage(); // Store files in memory temporarily
 const upload = multer({ storage: storage }).fields([
     { name: 'images', maxCount: 10 },
     { name: 'documents', maxCount: 10 },
@@ -55,24 +26,35 @@ const createRecommendation = (req, res) => {
             videos: []
         };
 
-        // Process uploaded files and store URLs and public_ids in relatedMedia
-        if (req.files.images) {
-            req.files.images.forEach(file => {
-                relatedMedia.images.push({ url: file.path, public_id: file.filename });
-            });
-        }
-        if (req.files.documents) {
-            req.files.documents.forEach(file => {
-                relatedMedia.documents.push({ url: file.path, public_id: file.filename });
-            });
-        }
-        if (req.files.videos) {
-            req.files.videos.forEach(file => {
-                relatedMedia.videos.push({ url: file.path, public_id: file.filename });
-            });
-        }
-
         try {
+            // Process uploaded images
+            if (req.files.images) {
+                for (const file of req.files.images) {
+                    const key = `images/${uuidv4()}_${file.originalname}`;
+                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                    relatedMedia.images.push({ url, public_id: key });
+                }
+            }
+
+            // Process uploaded documents
+            if (req.files.documents) {
+                for (const file of req.files.documents) {
+                    const key = `documents/${uuidv4()}_${file.originalname}`;
+                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                    relatedMedia.documents.push({ url, public_id: key });
+                }
+            }
+
+            // Process uploaded videos
+            if (req.files.videos) {
+                for (const file of req.files.videos) {
+                    const key = `videos/${uuidv4()}_${file.originalname}`;
+                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                    relatedMedia.videos.push({ url, public_id: key });
+                }
+            }
+
+            // Create and save the recommendation
             const newRecommendation = new Recommendation({
                 category,
                 recommendation,
@@ -80,6 +62,7 @@ const createRecommendation = (req, res) => {
                 recommendedBy,
                 type
             });
+
             await newRecommendation.save();
 
             res.status(201).json({
@@ -88,6 +71,7 @@ const createRecommendation = (req, res) => {
                 message: 'Recommendation created successfully'
             });
         } catch (error) {
+            console.error('Error creating recommendation:', error);
             res.status(500).json({
                 status: 'error',
                 body: null,
@@ -96,6 +80,7 @@ const createRecommendation = (req, res) => {
         }
     });
 };
+
 // Get all recommendations
 const getRecommendations = async (req, res) => {
     try {
@@ -139,6 +124,7 @@ const getRecommendationById = async (req, res) => {
     }
 };
 
+// Update a recommendation
 const updateRecommendation = async (req, res) => {
     upload(req, res, async (err) => {
         if (err) {
@@ -158,34 +144,29 @@ const updateRecommendation = async (req, res) => {
             // Process new media uploads
             if (req.files.images) {
                 for (const file of req.files.images) {
-                    const result = await cloudinary.uploader.upload(file.path, {
-                        folder: 'recommendation_media/images'
-                    });
-                    mediaUpdates.images.push({ url: result.secure_url, public_id: result.public_id });
+                    const key = `images/${uuidv4()}_${file.originalname}`;
+                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                    mediaUpdates.images.push({ url, public_id: key });
                 }
             }
 
             if (req.files.documents) {
                 for (const file of req.files.documents) {
-                    const result = await cloudinary.uploader.upload(file.path, {
-                        folder: 'recommendation_media/documents',
-                        resource_type: 'raw'
-                    });
-                    mediaUpdates.documents.push({ url: result.secure_url, public_id: result.public_id });
+                    const key = `documents/${uuidv4()}_${file.originalname}`;
+                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                    mediaUpdates.documents.push({ url, public_id: key });
                 }
             }
 
             if (req.files.videos) {
                 for (const file of req.files.videos) {
-                    const result = await cloudinary.uploader.upload(file.path, {
-                        folder: 'recommendation_media/videos',
-                        resource_type: 'video'
-                    });
-                    mediaUpdates.videos.push({ url: result.secure_url, public_id: result.public_id });
+                    const key = `videos/${uuidv4()}_${file.originalname}`;
+                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                    mediaUpdates.videos.push({ url, public_id: key });
                 }
             }
 
-            // Update the recommendation with new details
+            // Update the recommendation with new details and media
             const updatedRecommendation = await Recommendation.findByIdAndUpdate(
                 recommendationId,
                 {
@@ -227,10 +208,13 @@ const updateRecommendation = async (req, res) => {
 };
 
 
+
 // Delete a recommendation
 const deleteRecommendation = async (req, res) => {
     try {
+        // Find and delete the recommendation
         const recommendation = await Recommendation.findByIdAndDelete(req.params.id);
+
         if (!recommendation) {
             return res.status(404).json({
                 status: 'error',
@@ -239,11 +223,16 @@ const deleteRecommendation = async (req, res) => {
             });
         }
 
-        // Delete media from Cloudinary
+        // Delete media from S3
         const { relatedMedia } = recommendation;
+
         const deleteMedia = async (mediaArray) => {
             for (let media of mediaArray) {
-                await cloudinary.uploader.destroy(media.public_id);
+                try {
+                    await s3Util.deleteFile(media.public_id);
+                } catch (error) {
+                    console.error(`Error deleting file with public_id ${media.public_id}:`, error);
+                }
             }
         };
 
@@ -257,6 +246,7 @@ const deleteRecommendation = async (req, res) => {
             message: 'Recommendation deleted successfully'
         });
     } catch (error) {
+        console.error('Error deleting recommendation:', error);
         res.status(500).json({
             status: 'error',
             body: null,
@@ -404,8 +394,69 @@ const createDoctorRecommendation = (req, res) => {
     });
 };
 
+const deleteMedia = async (req, res) => {
+    const { recommendationId, mediaType, mediaId } = req.params;
+
+    // Validate media type
+    if (!['images', 'documents', 'videos'].includes(mediaType)) {
+        return res.status(400).json({
+            status: 'error',
+            body: null,
+            message: 'Invalid media type'
+        });
+    }
+
+    try {
+        // Find the recommendation
+        const recommendation = await Recommendation.findById(recommendationId);
+
+        if (!recommendation) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Recommendation not found'
+            });
+        }
+
+        // Find and remove the media item
+        const mediaList = recommendation.relatedMedia[mediaType];
+        const mediaIndex = mediaList.findIndex(media => media._id.toString() === mediaId);
+
+        if (mediaIndex === -1) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Media item not found'
+            });
+        }
+
+        // Delete the media file from S3
+        await s3Util.deleteFile(mediaList[mediaIndex].public_id);
+
+        // Remove media from the recommendation
+        mediaList.splice(mediaIndex, 1);
+
+        // Save the updated recommendation
+        const updatedRecommendation = await recommendation.save();
+
+        res.json({
+            status: 'success',
+            body: updatedRecommendation,
+            message: 'Media deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting media:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error deleting media'
+        });
+    }
+};
+
 
 module.exports = {
+    deleteMedia,
     createDoctorRecommendation,
     createRecommendation,
     getRecommendations,

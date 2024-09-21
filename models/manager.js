@@ -27,6 +27,10 @@ const managerSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    Active : {
+      type : String,
+      default : "yes"
+    }
     
 }, {
     timestamps: true, // Automatically adds `createdAt` and `updatedAt` fields
