@@ -276,21 +276,13 @@ const getDoctorRecommendations = async (req, res) => {
             });
         }
 
-        // Format the timestamp for each recommendation
-        const formattedRecommendations = doctorRecommendations.map(recommendation => {
-            const formattedTimestamp = moment(recommendation.timestamp).format('Do MMMM YYYY');
-            return {
-                ...recommendation.toObject(),
-                timestamp: formattedTimestamp
-            };
-        });
-
         res.json({
             status: "success",
-            body: formattedRecommendations,
+            body: doctorRecommendations,
             message: "Doctor recommendations retrieved successfully"
         });
     } catch (error) {
+        console.log(error);
         res.status(500).json({
             status: "error",
             body: null,

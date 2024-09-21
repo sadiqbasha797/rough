@@ -4,7 +4,6 @@ const Plan = require('../models/plan');
 const Patient = require('../models/patient');
 const Notification = require('../models/Notification');
 const multer = require('multer');
-const moment = require('moment');
 const AWS = require('aws-sdk');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
 const storage = multer.memoryStorage(); // Store files in memory temporarily
@@ -55,12 +54,6 @@ const getClinisistProfile = async (req, res) => {
         // Ensure we are working with a plain JavaScript object
         const clinisistData = req.clinisist.toObject ? req.clinisist.toObject() : req.clinisist;
 
-        if (clinisistData.dob) {
-            const date = new Date(clinisistData.dob);
-            // Format the date to '13th March 2024'
-            clinisistData.dob = moment(date).format('Do MMMM YYYY');
-        }
-
         res.json(clinisistData);
     } catch (error) {
         res.status(500).json({
@@ -70,7 +63,6 @@ const getClinisistProfile = async (req, res) => {
         });
     }
 };
-
 
 // Update Password
 const updatePassword = async (req, res) => {

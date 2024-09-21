@@ -5,7 +5,6 @@ const Notification = require('../models/Notification');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
-const moment = require('moment');
 const Subscription = require('../models/subscription');
 
 // Cloudinary configuration
@@ -381,16 +380,8 @@ const getAllClinisists = async (req, res) => {
     try {
         const clinisists = await Clinisist.find({});
 
-        // Format the dob for each clinician
         const formattedClinisists = clinisists.map(clinisist => {
-            const clinisistData = clinisist.toObject ? clinisist.toObject() : clinisist;
-
-            if (clinisistData.dob) {
-                const date = new Date(clinisistData.dob);
-                clinisistData.dob = moment(date).format('Do MMMM YYYY');
-            }
-
-            return clinisistData;
+            return clinisist.toObject ? clinisist.toObject() : clinisist;
         });
 
         res.status(200).json({
@@ -407,6 +398,7 @@ const getAllClinisists = async (req, res) => {
         });
     }
 };
+
 const getClinisistById = async (req, res) => {
     try {
         const clinisist = await Clinisist.findById(req.params.id);
@@ -419,13 +411,7 @@ const getClinisistById = async (req, res) => {
             });
         }
 
-        // Convert to a plain JavaScript object if necessary and format the dob
         const clinisistData = clinisist.toObject ? clinisist.toObject() : clinisist;
-
-        if (clinisistData.dob) {
-            const date = new Date(clinisistData.dob);
-            clinisistData.dob = moment(date).format('Do MMMM YYYY');
-        }
 
         res.status(200).json({
             status: "success",
