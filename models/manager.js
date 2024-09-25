@@ -23,6 +23,14 @@ const managerSchema = new mongoose.Schema({
         type: String,
         default: null,
     },
+    mobile : {
+        type : String,
+        required : false,
+    },
+    image : {
+        type : String,
+        required : false,
+    },      
     otpExpires: {
         type: Date,
         default: null,

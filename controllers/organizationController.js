@@ -8,6 +8,8 @@ const Plan = require('../models/plan');
 const Subscription = require('../models/subscription');
 const Patient = require('../models/patient');
 const moment = require('moment');
+const OrgAdmin = require('../models/orgAdmin');
+const Manager = require('../models/manager');
 
 const registerOrganization = async (req, res) => {
     const { name, email, password } = req.body;
@@ -319,12 +321,10 @@ const getOrganizationPatients = async (req, res) => {
     try {
         const organizationId = req.organization._id;
         
-        // Find all subscriptions for this organization and populate plan details
         const subscriptions = await Subscription.find({ organization: organizationId })
             .populate('patient', '-password')
             .populate('plan', 'name price validity');
         
-        // Transform the data to include patient details with their subscription and plan
         const patientsWithPlans = subscriptions.map(sub => ({
             ...sub.patient.toObject(),
             subscription: {
@@ -636,6 +636,155 @@ const getOrganizationPatientDetails = async (req, res) => {
 };
 
 
+// ... existing imports and functions ...
+
+const updateOrgAdmin = async (req, res) => {
+    try {
+        const { orgAdminId } = req.params;
+        const updateData = req.body;
+
+        // Ensure the organization can only update its own OrgAdmins
+        const orgAdmin = await OrgAdmin.findOne({ _id: orgAdminId, organization: req.organization._id });
+
+        if (!orgAdmin) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'OrgAdmin not found or does not belong to this organization'
+            });
+        }
+
+        // Update the OrgAdmin
+        const updatedOrgAdmin = await OrgAdmin.findByIdAndUpdate(orgAdminId, updateData, { new: true });
+
+        res.json({
+            status: 'success',
+            body: updatedOrgAdmin,
+            message: 'OrgAdmin updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating OrgAdmin:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating OrgAdmin'
+        });
+    }
+};
+
+const updateManager = async (req, res) => {
+    try {
+        const { managerId } = req.params;
+        const updateData = req.body;
+
+        // Ensure the organization can only update its own Managers
+        const manager = await Manager.findOne({ _id: managerId, organization: req.organization._id });
+
+        if (!manager) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Manager not found or does not belong to this organization'
+            });
+        }
+
+        // Update the Manager
+        const updatedManager = await Manager.findByIdAndUpdate(managerId, updateData, { new: true });
+
+        res.json({
+            status: 'success',
+            body: updatedManager,
+            message: 'Manager updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating Manager:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating Manager'
+        });
+    }
+};
+
+const deleteOrgAdmin = async (req, res) => {
+    try {
+        const { orgAdminId } = req.params;
+
+        // Ensure the organization can only delete its own OrgAdmins
+        const orgAdmin = await OrgAdmin.findOne({ _id: orgAdminId, organization: req.organization._id });
+
+        if (!orgAdmin) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'OrgAdmin not found or does not belong to this organization'
+            });
+        }
+
+        // Delete the OrgAdmin
+        await OrgAdmin.findByIdAndDelete(orgAdminId);
+
+        // Update Clinisists created by this OrgAdmin
+        await Clinisist.updateMany(
+            { createdBy: orgAdminId },
+            { $set: { createdBy: null } }
+        );
+
+        res.json({
+            status: 'success',
+            body: null,
+            message: 'OrgAdmin deleted successfully and associated Clinisists updated'
+        });
+    } catch (error) {
+        console.error('Error deleting OrgAdmin:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error deleting OrgAdmin'
+        });
+    }
+};
+
+const deleteManager = async (req, res) => {
+    try {
+        const { managerId } = req.params;
+
+        // Ensure the organization can only delete its own Managers
+        const manager = await Manager.findOne({ _id: managerId, organization: req.organization._id });
+
+        if (!manager) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Manager not found or does not belong to this organization'
+            });
+        }
+
+        // Delete the Manager
+        await Manager.findByIdAndDelete(managerId);
+
+        // Update Clinisists created by this Manager
+        await Clinisist.updateMany(
+            { createdBy: managerId },
+            { $set: { createdBy: null } }
+        );
+
+        res.json({
+            status: 'success',
+            body: null,
+            message: 'Manager deleted successfully and associated Clinisists updated'
+        });
+    } catch (error) {
+        console.error('Error deleting Manager:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error deleting Manager'
+        });
+    }
+};
+
+
 
 module.exports = {
     getClinisistsByOrganization,
@@ -653,4 +802,8 @@ module.exports = {
     getMonthlySubscriptionStats,
     getOrganizationEarnings,
     getOrganizationPatientDetails,
+    updateOrgAdmin,
+    updateManager,
+    deleteOrgAdmin,
+    deleteManager,
 };

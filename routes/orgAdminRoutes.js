@@ -17,7 +17,7 @@ const {
 router.post('/register',authOrganization, registerOrgAdmin);
 router.post('/login', loginOrgAdmin);
 router.get('/me', authenticateOrgAdmin, getOrgAdminDetails);
-router.put('/me', authenticateOrgAdmin, updateOrgAdmin);
+router.put('/update', authenticateOrgAdmin, updateOrgAdmin);
 router.delete('/me', authenticateOrgAdmin, deleteOrgAdmin);
 
 module.exports = router;

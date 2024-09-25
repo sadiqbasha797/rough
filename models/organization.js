@@ -19,6 +19,10 @@ const organizationSchema = new mongoose.Schema({
         type : Boolean,
         default : false
     },
+    image : {
+        type : String,
+        required : false,
+    },      
     otp: {
         type: String,
         default: null,

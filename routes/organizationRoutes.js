@@ -8,12 +8,15 @@ const {
     getInactiveClinisistsByOrganization, 
     getClinisistCountByOrganization,
     getCreatedByClinisist,
-
     createOrganizationPlan,
     getOrganizationPatients,
     getOrganizationSubscriptionCounts,
     getOrganizationSubscriptions,
-    getOrganizationEarnings
+    getOrganizationEarnings,
+    updateOrgAdmin,
+    updateManager,
+    deleteOrgAdmin,
+    deleteManager,
  } = require('../controllers/organizationController');
 
  const {
@@ -53,5 +56,9 @@ router.get('/patients', authOrganization, getOrganizationPatients);
 router.get('/subscription-counts', authOrganization, getOrganizationSubscriptionCounts);
 router.get('/subscriptions', authOrganization, getOrganizationSubscriptions);
 router.get('/earnings', authOrganization, getOrganizationEarnings);
+router.put('/orgadmin/:orgAdminId', authOrganization, updateOrgAdmin);
+router.put('/manager/:managerId', authOrganization, updateManager);
+router.delete('/orgadmin/:orgAdminId', authOrganization, deleteOrgAdmin);
+router.delete('/manager/:managerId', authOrganization, deleteManager);
 
 module.exports = router;

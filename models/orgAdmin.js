@@ -27,6 +27,14 @@ const orgAdminSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    mobile : {
+        type : String,
+        required : false,
+    },
+    image : {
+        type : String,
+        required : false,
+    },      
     Active : {
         type : String,
         default : "yes"
