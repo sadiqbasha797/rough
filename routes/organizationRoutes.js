@@ -8,7 +8,12 @@ const {
     getInactiveClinisistsByOrganization, 
     getClinisistCountByOrganization,
     getCreatedByClinisist,
-    getSubscribedPatients
+
+    createOrganizationPlan,
+    getOrganizationPatients,
+    getOrganizationSubscriptionCounts,
+    getOrganizationSubscriptions,
+    getOrganizationEarnings
  } = require('../controllers/organizationController');
 
  const {
@@ -43,5 +48,10 @@ router.get('/managers',authOrganization, getAllManagersByOrganization);  // Get 
 router.get('/managers/active',authOrganization, getActiveManagersByOrganization);  // Get active managers of a particular organization
 router.get('/managers/inactive',authOrganization, getInactiveManagersByOrganization);  // Get inactive managers of a particular organization
 router.get('/managers/counts',authOrganization, getManagersCountByOrganization);  // Get counts of active, inactive, and total managers
-router.get('/subscribed-patients', authOrganization, getSubscribedPatients);
+router.post('/create-plan', authOrganization, createOrganizationPlan);
+router.get('/patients', authOrganization, getOrganizationPatients);
+router.get('/subscription-counts', authOrganization, getOrganizationSubscriptionCounts);
+router.get('/subscriptions', authOrganization, getOrganizationSubscriptions);
+router.get('/earnings', authOrganization, getOrganizationEarnings);
+
 module.exports = router;

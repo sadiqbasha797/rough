@@ -1,0 +1,46 @@
+Organizations
+Pages:
+-> Dashboard
+-> Budget Analysis
+-> Patient Management
+-> Subscriptions
+-> Clinician Management
+-> Banners
+-> Add
+Manager:(Dashboard, Patient Management, Subscriptions, Clinician Management)
+-> Can add and manage clinicians
+-> Can see all the clinician and clinicians added by me(In switch tabs)
+-> Can able to do actions (edit and delete) to those clinicians who he have joined
+-> Can be able to view subscriptions of his clinicians
+-> Can't see any budget Analysis
+Admins:(Dashboard, Budget Analysis, Patient Management, Subscriptions, Clinician Management, Managers)
+-> Can be able to add and manage managers and clinicians
+-> Can see all the clinician and clinicians added by me(In switch tabs)
+-> Can see all the managers and managers added by me(In switch tabs)
+-> Can be able to see all subscriptions and budget Analysis
+-> Can't edit or delete any subscriptions
+Organizations:(Dashboard, Budget Analysis, Patient Management, Subscriptions, Clinician Management, Managers, Admins)
+-> Can do CRUD operations on admin, manager and clinician
+-> Can see all the admin, manager and clinician
+-> Can be able to see all subscriptions and budget analysis
+-> Can't edit or delete any subscriptions
+Ifeelincolor:
+Pages:
+-> Dashboard
+-> Budget Analysis
+-> Patient Management
+-> Subscriptions
+    -> Portal
+    -> Clinician
+    -> Organizations
+-> Assessments
+    -> Manage Assessments
+    -> ChatBot
+-> Banners
+-> Settings
+->
+Admin:
+-> Can do CRUD operations on organizations
+-> Can add and manage portal subscriptions
+-> Can add and manage assessments
+-> Can add and manage Banners

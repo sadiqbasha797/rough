@@ -16,6 +16,12 @@ const createSubscription = async (req, res) => {
             });
         }
 
+        // Check if the patient has an existing subscription to this plan
+        let existingSubscription = await Subscription.findOne({
+            patient: req.patient._id,
+            plan: planId,
+        });
+
         const startDate = new Date();
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + plan.validity);
@@ -23,28 +29,49 @@ const createSubscription = async (req, res) => {
         // Determine the clinisist ID based on the plan type
         let clinisistId = null;
         if (plan.planType === 'doctor-plan') {
-            clinisistId = plan.createdBy; // Assuming `createdBy` is the clinician's ID
+            clinisistId = plan.createdBy;
         }
 
-        const subscription = new Subscription({
-            patient: req.patient._id,
-            plan: planId,
-            clinisist: clinisistId,
-            startDate,
-            endDate,
-        });
+        let createdSubscription;
 
-        const createdSubscription = await subscription.save();
+        if (existingSubscription) {
+            // If the existing subscription has expired, update it
+            if (existingSubscription.endDate < new Date()) {
+                existingSubscription.startDate = startDate;
+                existingSubscription.endDate = endDate;
+                existingSubscription.clinisist = clinisistId;
+                existingSubscription.renewal = true; // Set renewal to true
+                createdSubscription = await existingSubscription.save();
+            } else {
+                // If the subscription is still active, return an error
+                return res.status(409).json({
+                    status: 'error',
+                    body: null,
+                    message: `You are already subscribed to the plan "${plan.name}". The plan is valid until ${existingSubscription.endDate.toISOString().split('T')[0]}.`
+                });
+            }
+        } else {
+            // If no existing subscription, create a new one
+            const newSubscription = new Subscription({
+                patient: req.patient._id,
+                plan: planId,
+                clinisist: clinisistId,
+                startDate,
+                endDate,
+                renewal: false, // Set renewal to false for new subscriptions
+            });
+            createdSubscription = await newSubscription.save();
+        }
 
         // Notify the patient
-        const patientMessage = `You have successfully subscribed to the plan "${plan.name}".`;
+        const patientMessage = `You have successfully ${existingSubscription ? 'renewed' : 'subscribed to'} the plan "${plan.name}".`;
         await createNotification(req.patient._id, 'Patient', patientMessage, null, null, 'subscription');
 
         // Notify the clinician (if applicable)
         if (clinisistId) {
             const clinician = await Clinisist.findById(clinisistId);
             if (clinician) {
-                const clinicianMessage = `A new patient has subscribed to your plan "${plan.name}".`;
+                const clinicianMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} your plan "${plan.name}".`;
                 await createNotification(clinician._id, 'Clinisist', clinicianMessage, req.patient._id, 'Patient', 'subscription');
             }
         }
@@ -52,7 +79,7 @@ const createSubscription = async (req, res) => {
         res.status(201).json({
             status: 'success',
             body: createdSubscription,
-            message: 'Subscription created successfully'
+            message: `Subscription ${existingSubscription ? 'renewed' : 'created'} successfully`
         });
 
     } catch (err) {

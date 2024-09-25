@@ -4,6 +4,10 @@ const jwt = require('jsonwebtoken');
 const createNotification = require('../utils/createNotification'); // Import the notification helper
 const sendEmail = require('../utils/mailUtil'); // Import the mail utility
 const Clinisist = require('../models/Clinisist');
+const Plan = require('../models/plan');
+const Subscription = require('../models/subscription');
+const Patient = require('../models/patient');
+const moment = require('moment');
 
 const registerOrganization = async (req, res) => {
     const { name, email, password } = req.body;
@@ -270,67 +274,367 @@ const getCreatedByClinisist = async (req, res) => {
     }
 };
 
-// ... existing code ...
-
-const Subscription = require('../models/subscription');
-const Patient = require('../models/patient');
-
-// Add this new function to the organizationController
-const getSubscribedPatients = async (req, res) => {
+const createOrganizationPlan = async (req, res) => {
     try {
-        const organizationId = req.organization._id;
+        const { name, price, details, validity } = req.body;
 
-        // Find all clinicians belonging to this organization
-        const clinicians = await Clinisist.find({ organization: organizationId });
-        const clinicianIds = clinicians.map(clinician => clinician._id);
-
-        // Find all subscriptions for these clinicians
-        const subscriptions = await Subscription.find({
-            clinisist: { $in: clinicianIds }
-        }).populate('patient').populate('clinisist');
-
-        // Group patients by clinician
-        const patientsByClinician = {};
-
-        subscriptions.forEach(subscription => {
-            const clinicianId = subscription.clinisist._id.toString();
-            const patientData = subscription.patient;
-
-            if (!patientsByClinician[clinicianId]) {
-                patientsByClinician[clinicianId] = {
-                    clinician: {
-                        id: subscription.clinisist._id,
-                        name: subscription.clinisist.name
-                    },
-                    patients: []
-                };
-            }
-
-            patientsByClinician[clinicianId].patients.push({
-                id: patientData._id,
-                name: patientData.userName,
-                email: patientData.email
+        // Validate input
+        if (!name || !price || !details || !validity) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Please provide all required fields: name, price, details, and validity'
             });
+        }
+
+        // Create new plan
+        const newPlan = new Plan({
+            name,
+            price,
+            details,
+            validity,
+            createdBy: req.organization._id, // Set the organization as the creator
+            planType: 'organization-plan' // Set the plan type to organization-plan
         });
 
-        const result = Object.values(patientsByClinician);
+        // Save the plan
+        await newPlan.save();
 
-        res.status(200).json({
+        res.status(201).json({
             status: 'success',
-            body: result,
-            message: 'Subscribed patients retrieved successfully'
+            body: newPlan,
+            message: 'Organization plan created successfully'
         });
     } catch (error) {
-        console.error('Error fetching subscribed patients:', error);
+        console.error('Error creating organization plan:', error);
         res.status(500).json({
             status: 'error',
             body: null,
-            message: 'Error fetching subscribed patients'
+            message: 'Error creating organization plan'
         });
     }
 };
 
-// ... existing code ...
+const getOrganizationPatients = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        
+        // Find all subscriptions for this organization and populate plan details
+        const subscriptions = await Subscription.find({ organization: organizationId })
+            .populate('patient', '-password')
+            .populate('plan', 'name price validity');
+        
+        // Transform the data to include patient details with their subscription and plan
+        const patientsWithPlans = subscriptions.map(sub => ({
+            ...sub.patient.toObject(),
+            subscription: {
+                startDate: sub.startDate,
+                endDate: sub.endDate,
+                plan: sub.plan
+            }
+        }));
+        
+        res.json({
+            status: 'success',
+            body: patientsWithPlans,
+            message: 'Organization patients with plan details retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching organization patients:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching organization patients'
+        });
+    }
+};
+
+const getOrganizationSubscriptionCounts = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        const currentDate = new Date();
+        
+        const validSubscriptions = await Subscription.countDocuments({
+            organization: organizationId,
+            endDate: { $gt: currentDate }
+        });
+        
+        const renewalSubscriptions = await Subscription.countDocuments({
+            organization: organizationId,
+            renewal: true
+        });
+        
+        const endedSubscriptions = await Subscription.countDocuments({
+            organization: organizationId,
+            endDate: { $lte: currentDate }
+        });
+        
+        res.json({
+            status: 'success',
+            body: {
+                validSubscriptions,
+                renewalSubscriptions,
+                endedSubscriptions
+            },
+            message: 'Organization subscription counts retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching organization subscription counts:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching organization subscription counts'
+        });
+    }
+};
+
+const getOrganizationSubscriptions = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        
+        const subscriptions = await Subscription.find({ organization: organizationId })
+            .populate('patient', 'userName email')
+            .populate('plan', 'name price validity');
+        
+        res.json({
+            status: 'success',
+            body: subscriptions,
+            message: 'Organization subscriptions retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching organization subscriptions:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching organization subscriptions'
+        });
+    }
+};
+
+const getMonthlySubscriptionStats = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        const { startDate, endDate } = req.query;
+
+        // Validate date range
+        if (!startDate || !endDate) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Please provide both startDate and endDate'
+            });
+        }
+
+        const start = moment(startDate).startOf('month');
+        const end = moment(endDate).endOf('month');
+
+        if (!start.isValid() || !end.isValid() || end.isBefore(start)) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Invalid date range'
+            });
+        }
+
+        const subscriptions = await Subscription.find({
+            organization: organizationId,
+            startDate: { $lte: end.toDate() },
+            endDate: { $gte: start.toDate() }
+        });
+
+        const monthlyStats = {};
+
+        while (start.isSameOrBefore(end, 'month')) {
+            const monthKey = start.format('YYYY-MM');
+            monthlyStats[monthKey] = {
+                valid: 0,
+                renewal: 0,
+                ended: 0
+            };
+            start.add(1, 'month');
+        }
+
+        subscriptions.forEach(sub => {
+            const subStartMonth = moment(sub.startDate).format('YYYY-MM');
+            const subEndMonth = moment(sub.endDate).format('YYYY-MM');
+            const currentMonth = moment().format('YYYY-MM');
+
+            if (monthlyStats[subStartMonth]) {
+                if (sub.renewal) {
+                    monthlyStats[subStartMonth].renewal++;
+                } else if (subEndMonth >= currentMonth) {
+                    monthlyStats[subStartMonth].valid++;
+                } else {
+                    monthlyStats[subStartMonth].ended++;
+                }
+            }
+        });
+
+        res.json({
+            status: 'success',
+            body: monthlyStats,
+            message: 'Monthly subscription statistics retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching monthly subscription stats:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching monthly subscription statistics'
+        });
+    }
+};
+
+const getOrganizationEarnings = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        let { startDate, endDate } = req.query;
+
+        const currentDate = moment();
+        const currentYear = currentDate.year();
+
+        let start, end;
+        let isCurrentYearQuery = false;
+
+        if (!startDate || !endDate) {
+            start = moment().startOf('year');
+            end = moment().endOf('year');
+            isCurrentYearQuery = true;
+        } else {
+            start = moment(startDate).startOf('day');
+            end = moment(endDate).endOf('day');
+        }
+
+        if (!start.isValid() || !end.isValid() || end.isBefore(start)) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Invalid date range'
+            });
+        }
+
+        const allSubscriptions = await Subscription.find({
+            organization: organizationId
+        }).populate('plan', 'price');
+
+        const monthlyEarnings = {};
+        let periodTotal = 0;
+        let allTimeTotal = 0;
+
+        allSubscriptions.forEach(sub => {
+            const subStartDate = moment(sub.startDate);
+            const earnings = sub.plan.price;
+
+            // Calculate all-time total
+            allTimeTotal += earnings;
+
+            // Calculate period total and monthly earnings
+            if (subStartDate.isBetween(start, end, null, '[]')) {
+                periodTotal += earnings;
+
+                const monthKey = subStartDate.format('YYYY-MM');
+                if (!monthlyEarnings[monthKey]) {
+                    monthlyEarnings[monthKey] = 0;
+                }
+                monthlyEarnings[monthKey] += earnings;
+            }
+        });
+
+        // Fill in months with zero earnings for the queried period
+        let currentMonth = start.clone().startOf('month');
+        while (currentMonth.isSameOrBefore(end, 'month')) {
+            const monthKey = currentMonth.format('YYYY-MM');
+            if (!monthlyEarnings[monthKey]) {
+                monthlyEarnings[monthKey] = 0;
+            }
+            currentMonth.add(1, 'month');
+        }
+
+        // Sort monthly earnings
+        const sortedMonthlyEarnings = Object.fromEntries(
+            Object.entries(monthlyEarnings).sort(([a], [b]) => a.localeCompare(b))
+        );
+
+        const response = {
+            monthlyEarnings: sortedMonthlyEarnings,
+            periodTotal,
+            allTimeTotal
+        };
+
+        if (isCurrentYearQuery) {
+            response.currentYearTotal = periodTotal;
+        }
+
+        res.json({
+            status: 'success',
+            body: response,
+            message: 'Organization earnings retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching organization earnings:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching organization earnings'
+        });
+    }
+};
+
+const getOrganizationPatientDetails = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        const { patientId } = req.params;
+
+        // Find the patient
+        const patient = await Patient.findById(patientId).lean();
+
+        if (!patient) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Patient not found'
+            });
+        }
+
+        // Find the subscription for this patient and organization
+        const subscription = await Subscription.findOne({
+            patient: patientId,
+            organization: organizationId
+        }).populate('plan').lean();
+
+        if (!subscription) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Subscription not found for this patient and organization'
+            });
+        }
+
+        // Combine patient and subscription data
+        const result = {
+            ...patient,
+            planName: subscription.plan.name,
+            planAmount: subscription.plan.price,
+            subscriptionCreatedDate: moment(subscription.createdAt).format('DD/MM/YYYY'),
+            subscriptionStartDate: moment(subscription.startDate).format('DD/MM/YYYY'),
+            subscriptionEndDate: moment(subscription.endDate).format('DD/MM/YYYY')
+        };
+
+        res.json({
+            status: 'success',
+            body: result,
+            message: 'Patient details retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching patient details:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching patient details'
+        });
+    }
+};
+
 
 
 module.exports = {
@@ -342,5 +646,11 @@ module.exports = {
     getInactiveClinisistsByOrganization, 
     getClinisistCountByOrganization,
     getCreatedByClinisist,
-    getSubscribedPatients
+    createOrganizationPlan,
+    getOrganizationPatients,
+    getOrganizationSubscriptionCounts,
+    getOrganizationSubscriptions,
+    getMonthlySubscriptionStats,
+    getOrganizationEarnings,
+    getOrganizationPatientDetails,
 };

@@ -31,7 +31,7 @@ const planSchema = new mongoose.Schema({
     },
     planType: { // Adding planType field with specific allowed values
         type: String,
-        enum: ['portal-plan', 'doctor-plan'],
+        enum: ['portal-plan', 'doctor-plan', 'organization-plan'],
         required: true,
     }
 }, {

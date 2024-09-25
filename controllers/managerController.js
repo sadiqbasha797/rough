@@ -2,6 +2,7 @@ const Manager = require('../models/manager');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/mailUtil'); 
+const createNotification = require('../utils/createNotification'); 
 
 const registerManager = async (req, res) => {
     const { name, email, password } = req.body;

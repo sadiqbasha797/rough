@@ -16,6 +16,11 @@ const subscriptionSchema = new mongoose.Schema({
         ref: 'Clinisist',
         default: null,
     },
+    organization: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Organization',
+        default: null,
+    },
     startDate: {
         type: Date,
         default: Date.now,
@@ -23,6 +28,10 @@ const subscriptionSchema = new mongoose.Schema({
     endDate: {
         type: Date,
         required: true,
+    },
+    renewal :{
+        type: Boolean,
+        default: false, 
     }
 },{
     timestamps: true,
