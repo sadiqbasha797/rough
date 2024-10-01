@@ -28,6 +28,7 @@ router.post('/manager/register-doctor', authenticateManager, registerClinisistMa
 router.put('/organization/update-doctor/:clinisistId', authOrganization, upload.single('image'), updateClinisistOrganization);
 router.put('/orgadmin/update-doctor/:clinisistId', authenticateOrgAdmin, upload.single('image'), updateClinisistOrgAdmin);
 router.put('/manager/update-doctor/:clinisistId', authenticateManager, upload.single('image'), updateClinisistManager);
+
 router.delete('/organization/delete-doctor/:clinisistId', authOrganization, deleteClinisistOrganization);
 router.delete('/orgadmin/delete-doctor/:clinisistId', authenticateOrgAdmin, deleteClinisistOrgAdmin);
 router.delete('/manager/delete-doctor/:clinisistId', authenticateManager, deleteClinisistManager);

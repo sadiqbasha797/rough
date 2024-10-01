@@ -31,6 +31,10 @@ const organizationSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    active : {
+        type : Boolean,
+        default : false
+    }
     
 }, {
     timestamps: true // Automatically adds createdAt and updatedAt fields

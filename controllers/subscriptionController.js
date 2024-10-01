@@ -5,6 +5,7 @@ const Clinisist = require('../models/Clinisist');
 const patient = require('../models/patient');
 const createSubscription = async (req, res) => {
     const { planId } = req.params;
+    const { clinisistId } = req.body; // New input for organization plans
 
     try {
         const plan = await Plan.findById(planId);
@@ -26,10 +27,14 @@ const createSubscription = async (req, res) => {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + plan.validity);
 
-        // Determine the clinisist ID based on the plan type
-        let clinisistId = null;
+        // Determine the clinisist ID or organization ID based on the plan type
+        let subscriptionClinisistId = null;
+        let organizationId = null;
         if (plan.planType === 'doctor-plan') {
-            clinisistId = plan.createdBy;
+            subscriptionClinisistId = plan.createdBy;
+        } else if (plan.planType === 'organization-plan') {
+            organizationId = plan.createdBy;
+            subscriptionClinisistId = clinisistId; // Use the provided clinisistId for organization plans
         }
 
         let createdSubscription;
@@ -39,7 +44,8 @@ const createSubscription = async (req, res) => {
             if (existingSubscription.endDate < new Date()) {
                 existingSubscription.startDate = startDate;
                 existingSubscription.endDate = endDate;
-                existingSubscription.clinisist = clinisistId;
+                existingSubscription.clinisist = subscriptionClinisistId;
+                existingSubscription.organization = organizationId;
                 existingSubscription.renewal = true; // Set renewal to true
                 createdSubscription = await existingSubscription.save();
             } else {
@@ -55,7 +61,8 @@ const createSubscription = async (req, res) => {
             const newSubscription = new Subscription({
                 patient: req.patient._id,
                 plan: planId,
-                clinisist: clinisistId,
+                clinisist: subscriptionClinisistId,
+                organization: organizationId,
                 startDate,
                 endDate,
                 renewal: false, // Set renewal to false for new subscriptions
@@ -67,13 +74,19 @@ const createSubscription = async (req, res) => {
         const patientMessage = `You have successfully ${existingSubscription ? 'renewed' : 'subscribed to'} the plan "${plan.name}".`;
         await createNotification(req.patient._id, 'Patient', patientMessage, null, null, 'subscription');
 
-        // Notify the clinician (if applicable)
-        if (clinisistId) {
-            const clinician = await Clinisist.findById(clinisistId);
+        // Notify the clinician (for both doctor-plan and organization-plan)
+        if (subscriptionClinisistId) {
+            const clinician = await Clinisist.findById(subscriptionClinisistId);
             if (clinician) {
-                const clinicianMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} your plan "${plan.name}".`;
+                const clinicianMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} ${plan.planType === 'organization-plan' ? 'an organization' : 'your'} plan "${plan.name}".`;
                 await createNotification(clinician._id, 'Clinisist', clinicianMessage, req.patient._id, 'Patient', 'subscription');
             }
+        }
+
+        // Notify the organization (for organization-plan)
+        if (organizationId) {
+            const organizationMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} your organization plan "${plan.name}".`;
+            await createNotification(organizationId, 'Organization', organizationMessage, req.patient._id, 'Patient', 'subscription');
         }
 
         res.status(201).json({
@@ -90,6 +103,7 @@ const createSubscription = async (req, res) => {
         });
     }
 };
+
 
 const getSubscriptionByPatient = async (req, res) => {
     try {

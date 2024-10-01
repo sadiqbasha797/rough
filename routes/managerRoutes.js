@@ -7,22 +7,22 @@ const {
     loginManager,
     getManagerDetails,
     updateManager,
-    deleteManager
+    deleteManager,
+    getManagerById,
+    getClinisistsCreatedByManager,
+    getClinisistCountsByManager,
+    getSubscriptionsOfClinisistsJoinedByManager,
+    getSubscriptionCountsByManager
 } = require('../controllers/managerController');
 
-// Route to register a new Manager
-router.post('/register',authOrganization, registerManager);
-
-// Route to login an existing Manager
 router.post('/login', loginManager);
-
-// Route to get Manager details (requires authentication)
 router.get('/me', authenticateManager, getManagerDetails);
-
-// Route to update Manager details (requires authentication)
 router.put('/me', authenticateManager, updateManager);
-
-// Route to delete a Manager (requires authentication)
 router.delete('/me', authenticateManager, deleteManager);
-
+router.get('/clinicians-created', authenticateManager, getClinisistsCreatedByManager);
+router.get('/clinicians-counts', authenticateManager, getClinisistCountsByManager);
+router.get('/subscriptions', authenticateManager, getSubscriptionsOfClinisistsJoinedByManager);
+router.get('/subscriptions-counts', authenticateManager, getSubscriptionCountsByManager);
+router.post('/register',authOrganization, registerManager);
+router.get('/:id', authOrganization, getManagerById);
 module.exports = router;

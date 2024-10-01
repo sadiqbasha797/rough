@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const Clinisist = require('../models/Clinisist');
+const Organization = require('../models/organization');
 const createNotification = require('../utils/createNotification');
 const sendEmail = require('../utils/mailUtil');
 const { uploadFile, deleteFile } = require('../utils/s3Util');
@@ -10,6 +11,16 @@ const registerClinisistOrganization = async (req, res) => {
 
     try {
         const organizationId = req.organization._id;
+
+        // Check if the organization is active
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot register clinisist.'
+            });
+        }
 
         // Check if the Clinisist already exists
         const existingClinisist = await Clinisist.findOne({ email });
@@ -63,6 +74,16 @@ const registerClinisistOrgAdmin = async (req, res) => {
         console.log("org_id",organizationId);
         const orgadminId = req.orgAdmin._id;
 
+        // Check if the organization is active
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot register clinisist.'
+            });
+        }
+
         const existingClinisist = await Clinisist.findOne({ email });
         if (existingClinisist) {
             return res.status(400).json({
@@ -113,6 +134,16 @@ const registerClinisistManager = async (req, res) => {
         const organizationId = req.manager.organization;
         const managerId = req.manager._id;
 
+        // Check if the organization is active
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot register clinisist.'
+            });
+        }
+
         const existingClinisist = await Clinisist.findOne({ email });
         if (existingClinisist) {
             return res.status(400).json({
@@ -162,6 +193,12 @@ const updateClinisistWithImage = async (clinisistId, updateData, imageFile, user
         throw new Error('Clinisist not found');
     }
 
+    // Check if the organization is active
+    const organization = await Organization.findById(clinisist.organization);
+    if (!organization || !organization.active) {
+        throw new Error('Organization is not active. Cannot update clinisist.');
+    }
+
     // If there's a new image file, upload it and update the image URL
     if (imageFile) {
         const fileContent = imageFile.buffer;
@@ -189,6 +226,15 @@ const updateClinisistOrganization = async (req, res) => {
         const { clinisistId } = req.params;
         const updateData = req.body;
         const organizationId = req.organization._id;
+
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot update clinisist.'
+            });
+        }
 
         const clinisist = await Clinisist.findOne({ _id: clinisistId, organization: organizationId });
 
@@ -223,6 +269,15 @@ const updateClinisistOrgAdmin = async (req, res) => {
         const updateData = req.body;
         const organizationId = req.orgAdmin.organization;
 
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot update clinisist.'
+            });
+        }
+
         const clinisist = await Clinisist.findOne({ _id: clinisistId, organization: organizationId });
 
         if (!clinisist) {
@@ -256,6 +311,15 @@ const updateClinisistManager = async (req, res) => {
         const updateData = req.body;
         const organizationId = req.manager.organization;
 
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot update clinisist.'
+            });
+        }
+
         const clinisist = await Clinisist.findOne({ _id: clinisistId, organization: organizationId });
 
         if (!clinisist) {
@@ -287,6 +351,15 @@ const deleteClinisistOrganization = async (req, res) => {
     try {
         const { clinisistId } = req.params;
         const organizationId = req.organization._id;
+
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot delete clinisist.'
+            });
+        }
 
         const clinisist = await Clinisist.findOne({ _id: clinisistId, organization: organizationId });
 
@@ -320,6 +393,15 @@ const deleteClinisistOrgAdmin = async (req, res) => {
         const { clinisistId } = req.params;
         const organizationId = req.orgAdmin.organization;
 
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot delete clinisist.'
+            });
+        }
+
         const clinisist = await Clinisist.findOne({ _id: clinisistId, organization: organizationId });
 
         if (!clinisist) {
@@ -351,6 +433,15 @@ const deleteClinisistManager = async (req, res) => {
     try {
         const { clinisistId } = req.params;
         const organizationId = req.manager.organization;
+
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot delete clinisist.'
+            });
+        }
 
         const clinisist = await Clinisist.findOne({ _id: clinisistId, organization: organizationId });
 

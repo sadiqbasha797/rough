@@ -20,7 +20,7 @@ const color = require('./routes/colorRoutes');
 const body = require('./routes/bodyRoutes');
 const bodyassessments = require('./routes/bodyAssessmentRoutes');
 const cors = require('cors');
-
+const orgSubscriptionRoutes = require('./routes/orgSubscriptionRoutes');
 dotenv.config();
 connectDB();
 
@@ -47,6 +47,7 @@ app.use('/api', orgClinisist);
 app.use('/api/admin',color);
 app.use('/api/admin/', body);
 app.use('/api',bodyassessments);
+app.use('/api/orgSubscription', orgSubscriptionRoutes);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
@@ -56,3 +57,12 @@ app.listen(PORT, () => {
 //AWS_ACCESS_KEY_ID = AKIA5TZI3C6UQ7XJHPN6
 //AWS_SECRET_ACCESS_KEY = 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
 //AWS_REGION = us-east-1
+
+const cron = require('node-cron');
+const { checkAndUpdateExpiredSubscriptions } = require('./controllers/orgSubscription');
+
+// Schedule the task to run every day at midnight
+cron.schedule('0 0 * * *', async () => {
+    console.log('Running daily check for expired subscriptions');
+    await checkAndUpdateExpiredSubscriptions();
+});

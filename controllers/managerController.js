@@ -2,12 +2,27 @@ const Manager = require('../models/manager');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/mailUtil'); 
+const createNotification  = require('../utils/createNotification');
+const Organization = require('../models/organization');
+const Clinisist = require('../models/Clinisist');
+const Subscription = require('../models/subscription');
 
 const registerManager = async (req, res) => {
     const { name, email, password } = req.body;
 
     try {
         const organizationId = req.organization._id;
+        
+        // Check if the organization is active
+        const organization = await Organization.findById(organizationId);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot register manager.'
+            });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const manager = new Manager({
@@ -73,14 +88,36 @@ const loginManager = async (req, res) => {
             });
         }
 
-        const token = jwt.sign({ id: manager._id, organization: manager.organization, role:"manager" }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const role = "Manager";
+        // Generate token
+        const token = jwt.sign(
+            {
+                id: manager._id,
+                role: "manager",
+                organization: manager.organization,
+                userType: 'manager'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        console.log('Generated token:', token);
+
         res.json({
             status: 'success',
-            body: { token, manager, role },
+            body: { 
+                token,
+                manager: {
+                    id: manager._id,
+                    name: manager.name,
+                    email: manager.email,
+                    role: "manager",
+                    organization: manager.organization
+                }
+            },
             message: 'Manager logged in successfully'
         });
     } catch (err) {
+        console.error('Login error:', err);
         res.status(500).json({
             status: 'error',
             body: null,
@@ -103,6 +140,16 @@ const updateManager = async (req, res) => {
     const { name, email, password } = req.body;
 
     try {
+        // Check if the organization is active
+        const organization = await Organization.findById(req.manager.organization);
+        if (!organization || !organization.active) {
+            return res.status(403).json({
+                status: 'error',
+                body: null,
+                message: 'Organization is not active. Cannot update manager details.'
+            });
+        }
+
         if (password) {
             req.manager.password = await bcrypt.hash(password, 10);
         }
@@ -255,6 +302,200 @@ const getManagersCountByOrganization = async (req, res) => {
     }
 };
 
+// Fetch Manager by ID
+const getManagerById = async (req, res) => {
+    try {
+        const managerId = req.params.id;
+        const manager = await Manager.findById(managerId);
+
+        if (!manager) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Manager not found'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: manager,
+            message: 'Manager retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching manager: ' + error.message
+        });
+    }
+};
+
+// Fetch Clinisists created by this Manager
+const getClinisistsCreatedByManager = async (req, res) => {
+    try {
+        const managerId = req.manager._id;
+        const clinisists = await Clinisist.find({ createdBy: managerId });
+
+        if (!clinisists || clinisists.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No clinisists found created by this manager'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: clinisists,
+            message: 'Clinisists retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching clinisists: ' + error.message
+        });
+    }
+};
+// Fetch counts of clinisists joined by the manager
+const getClinisistCountsByManager = async (req, res) => {
+    try {
+        const managerId = req.manager._id;
+
+        // Get total count
+        const totalCount = await Clinisist.countDocuments({ createdBy: managerId });
+
+        // Get active count
+        const activeCount = await Clinisist.countDocuments({ createdBy: managerId, active: "yes" });
+
+        // Get inactive count
+        const inactiveCount = await Clinisist.countDocuments({ createdBy: managerId, active: "yes" });
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                totalClinisists: totalCount,
+                activeClinisists: activeCount,
+                inactiveClinisists: inactiveCount
+            },
+            message: 'Clinisist counts retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching clinisist counts: ' + error.message
+        });
+    }
+};
+
+
+// Fetch subscriptions of clinisists joined by the manager
+const getSubscriptionsOfClinisistsJoinedByManager = async (req, res) => {
+    try {
+        const managerId = req.manager._id;
+
+        // Find all clinisists created by this manager
+        const clinisists = await Clinisist.find({ createdBy: managerId });
+
+        if (!clinisists || clinisists.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No clinisists found created by this manager'
+            });
+        }
+
+        // Get the IDs of these clinisists
+        const clinisistIds = clinisists.map(clinisist => clinisist._id);
+
+        // Find all subscriptions where the clinisist is in the list of clinisists created by the manager
+        const subscriptions = await Subscription.find({ clinisist: { $in: clinisistIds } })
+            .populate('patient', 'name email') // Populate patient details
+            .populate('plan', 'name validity') // Populate plan details
+            .populate('clinisist', 'name email'); // Populate clinisist details
+
+        if (!subscriptions || subscriptions.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No subscriptions found for clinisists joined by this manager'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: subscriptions,
+            message: 'Subscriptions retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching subscriptions: ' + error.message
+        });
+    }
+};
+
+// Get counts of active, renewal, and ended subscriptions for clinisists joined by the manager
+const getSubscriptionCountsByManager = async (req, res) => {
+    try {
+        const managerId = req.manager._id;
+
+        // Find all clinisists created by this manager
+        const clinisists = await Clinisist.find({ createdBy: managerId });
+
+        if (!clinisists || clinisists.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No clinisists found created by this manager'
+            });
+        }
+
+        // Get the IDs of these clinisists
+        const clinisistIds = clinisists.map(clinisist => clinisist._id);
+
+        const currentDate = new Date();
+
+        // Count active subscriptions
+        const activeCount = await Subscription.countDocuments({
+            clinisist: { $in: clinisistIds },
+            startDate: { $lte: currentDate },
+            endDate: { $gt: currentDate }
+        });
+
+        // Count renewal subscriptions
+        const renewalCount = await Subscription.countDocuments({
+            clinisist: { $in: clinisistIds },
+            renewal: true
+        });
+
+        // Count ended subscriptions
+        const endedCount = await Subscription.countDocuments({
+            clinisist: { $in: clinisistIds },
+            endDate: { $lte: currentDate }
+        });
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                activeSubscriptions: activeCount,
+                renewalSubscriptions: renewalCount,
+                endedSubscriptions: endedCount
+            },
+            message: 'Subscription counts retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching subscription counts: ' + error.message
+        });
+    }
+};
+
+
 module.exports = {
     registerManager,
     loginManager,
@@ -264,5 +505,10 @@ module.exports = {
     getAllManagersByOrganization, 
     getActiveManagersByOrganization, 
     getInactiveManagersByOrganization, 
-    getManagersCountByOrganization 
+    getManagersCountByOrganization,
+    getManagerById,
+    getClinisistsCreatedByManager,
+    getClinisistCountsByManager,
+    getSubscriptionsOfClinisistsJoinedByManager,
+    getSubscriptionCountsByManager
 };
