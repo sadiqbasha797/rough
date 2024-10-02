@@ -9,6 +9,9 @@ const {
     getClinisistCountByOrganization,
     getCreatedByClinisist,
     createOrganizationPlan,
+    getOrganizationPlans,
+    updateOrganizationPlan,
+    deleteOrganizationPlan,
     getOrganizationPatients,
     getOrganizationSubscriptionCounts,
     getOrganizationSubscriptions,
@@ -45,13 +48,16 @@ router.get('/doctors/count',authOrganization, getClinisistCountByOrganization);
 router.get('/my-doctors',authOrganization, getCreatedByClinisist);
 router.get('/orgadmins',authOrganization, getOrgAdminsByOrganization); 
 router.get('/orgadmins/counts',authOrganization, getOrgAdminCounts); 
-router.get('/orgadmins/active',authOrganization, getActiveOrgAdminsByOrganization);  // Get active org admins of a particular organization
-router.get('/orgadmins/inactive',authOrganization, getInactiveOrgAdminsByOrganization);  // Get inactive org admins of a particular organization
-router.get('/managers',authOrganization, getAllManagersByOrganization);  // Get all managers of a particular organization
-router.get('/managers/active',authOrganization, getActiveManagersByOrganization);  // Get active managers of a particular organization
-router.get('/managers/inactive',authOrganization, getInactiveManagersByOrganization);  // Get inactive managers of a particular organization
-router.get('/managers/counts',authOrganization, getManagersCountByOrganization);  // Get counts of active, inactive, and total managers
+router.get('/orgadmins/active',authOrganization, getActiveOrgAdminsByOrganization);  
+router.get('/orgadmins/inactive',authOrganization, getInactiveOrgAdminsByOrganization);  
+router.get('/managers',authOrganization, getAllManagersByOrganization);  
+router.get('/managers/active',authOrganization, getActiveManagersByOrganization);  
+router.get('/managers/inactive',authOrganization, getInactiveManagersByOrganization);  
+router.get('/managers/counts',authOrganization, getManagersCountByOrganization);
 router.post('/create-plan', authOrganization, createOrganizationPlan);
+router.get('/plans', authOrganization, getOrganizationPlans);
+router.put('/plan/:planId', authOrganization, updateOrganizationPlan);
+router.delete('/plan/:planId', authOrganization, deleteOrganizationPlan);
 router.get('/patients', authOrganization, getOrganizationPatients);
 router.get('/subscription-counts', authOrganization, getOrganizationSubscriptionCounts);
 router.get('/subscriptions', authOrganization, getOrganizationSubscriptions);

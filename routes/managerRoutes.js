@@ -12,7 +12,9 @@ const {
     getClinisistsCreatedByManager,
     getClinisistCountsByManager,
     getSubscriptionsOfClinisistsJoinedByManager,
-    getSubscriptionCountsByManager
+    getSubscriptionCountsByManager,
+    getSubscriptionBudgetByManager,
+    getManagerEarnings
 } = require('../controllers/managerController');
 
 router.post('/login', loginManager);
@@ -23,6 +25,8 @@ router.get('/clinicians-created', authenticateManager, getClinisistsCreatedByMan
 router.get('/clinicians-counts', authenticateManager, getClinisistCountsByManager);
 router.get('/subscriptions', authenticateManager, getSubscriptionsOfClinisistsJoinedByManager);
 router.get('/subscriptions-counts', authenticateManager, getSubscriptionCountsByManager);
+router.get('/earnings', authenticateManager, getSubscriptionBudgetByManager);
+router.get('/earnings-count', authenticateManager, getManagerEarnings);
 router.post('/register',authOrganization, registerManager);
 router.get('/:id', authOrganization, getManagerById);
 module.exports = router;

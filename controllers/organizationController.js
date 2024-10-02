@@ -317,6 +317,107 @@ const createOrganizationPlan = async (req, res) => {
     }
 };
 
+const getOrganizationPlans = async (req, res) => {
+    try {
+        const organizationId = req.organization._id;
+        
+        const plans = await Plan.find({ 
+            createdBy: organizationId, 
+            planType: 'organization-plan' 
+        });
+
+        res.status(200).json({
+            status: 'success',
+            body: plans,
+            message: 'Organization plans retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching organization plans:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching organization plans'
+        });
+    }
+};
+
+const updateOrganizationPlan = async (req, res) => {
+    try {
+        const { planId } = req.params;
+        const { name, price, details, validity } = req.body;
+        const organizationId = req.organization._id;
+
+        const plan = await Plan.findOne({ 
+            _id: planId, 
+            createdBy: organizationId, 
+            planType: 'organization-plan' 
+        });
+
+        if (!plan) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Plan not found or does not belong to this organization'
+            });
+        }
+
+        plan.name = name || plan.name;
+        plan.price = price || plan.price;
+        plan.details = details || plan.details;
+        plan.validity = validity || plan.validity;
+
+        await plan.save();
+
+        res.status(200).json({
+            status: 'success',
+            body: plan,
+            message: 'Organization plan updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating organization plan:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating organization plan'
+        });
+    }
+};
+
+const deleteOrganizationPlan = async (req, res) => {
+    try {
+        const { planId } = req.params;
+        const organizationId = req.organization._id;
+
+        const plan = await Plan.findOneAndDelete({ 
+            _id: planId, 
+            createdBy: organizationId, 
+            planType: 'organization-plan' 
+        });
+
+        if (!plan) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Plan not found or does not belong to this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: null,
+            message: 'Organization plan deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting organization plan:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error deleting organization plan'
+        });
+    }
+};
+
+
 const getOrganizationPatients = async (req, res) => {
     try {
         const organizationId = req.organization._id;
@@ -393,8 +494,10 @@ const getOrganizationSubscriptions = async (req, res) => {
         const organizationId = req.organization._id;
         
         const subscriptions = await Subscription.find({ organization: organizationId })
-            .populate('patient', 'userName email')
-            .populate('plan', 'name price validity');
+            .populate('patient')
+            .populate('plan')
+            .populate('clinisist')
+            .populate('organization');
         
         res.json({
             status: 'success',
@@ -796,6 +899,9 @@ module.exports = {
     getClinisistCountByOrganization,
     getCreatedByClinisist,
     createOrganizationPlan,
+    getOrganizationPlans,
+    updateOrganizationPlan,
+    deleteOrganizationPlan, 
     getOrganizationPatients,
     getOrganizationSubscriptionCounts,
     getOrganizationSubscriptions,
