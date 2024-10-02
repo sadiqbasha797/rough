@@ -26,3 +26,4 @@ router.get('/subscriptions-counts', authenticateManager, getSubscriptionCountsBy
 router.post('/register',authOrganization, registerManager);
 router.get('/:id', authOrganization, getManagerById);
 module.exports = router;
+    
