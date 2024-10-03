@@ -198,10 +198,10 @@ const getAllManagersByOrganization = async (req, res) => {
         const managers = await Manager.find({ organization: organizationId });
 
         if (!managers || managers.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No managers found for this organization'
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No records found'
             });
         }
 
@@ -226,10 +226,10 @@ const getActiveManagersByOrganization = async (req, res) => {
         const activeManagers = await Manager.find({ organization: organizationId, Active: 'yes' });
 
         if (!activeManagers || activeManagers.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No active managers found for this organization'
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No records found'
             });
         }
 
@@ -254,10 +254,10 @@ const getInactiveManagersByOrganization = async (req, res) => {
         const inactiveManagers = await Manager.find({ organization: organizationId, Active: 'no' });
 
         if (!inactiveManagers || inactiveManagers.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No inactive managers found for this organization'
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No records found'
             });
         }
 
@@ -308,10 +308,10 @@ const getManagerById = async (req, res) => {
         const manager = await Manager.findById(managerId);
 
         if (!manager) {
-            return res.status(404).json({
-                status: 'error',
+            return res.status(200).json({
+                status: 'success',
                 body: null,
-                message: 'Manager not found'
+                message: 'No records found'
             });
         }
 
@@ -336,10 +336,10 @@ const getClinisistsCreatedByManager = async (req, res) => {
         const clinisists = await Clinisist.find({ createdBy: managerId });
 
         if (!clinisists || clinisists.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No clinisists found created by this manager'
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No records found'
             });
         }
 
@@ -398,10 +398,10 @@ const getSubscriptionsOfClinisistsJoinedByManager = async (req, res) => {
         const clinisists = await Clinisist.find({ createdBy: managerId });
 
         if (!clinisists || clinisists.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No clinisists found created by this manager'
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No records found'
             });
         }
 
@@ -415,10 +415,10 @@ const getSubscriptionsOfClinisistsJoinedByManager = async (req, res) => {
             .populate('clinisist'); // Populate clinisist details
 
         if (!subscriptions || subscriptions.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No subscriptions found for clinisists joined by this manager'
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No records found'
             });
         }
 
@@ -445,10 +445,14 @@ const getSubscriptionCountsByManager = async (req, res) => {
         const clinisists = await Clinisist.find({ createdBy: managerId });
 
         if (!clinisists || clinisists.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No clinisists found created by this manager'
+            return res.status(200).json({
+                status: 'success',
+                body: {
+                    activeSubscriptions: 0,
+                    renewalSubscriptions: 0,
+                    endedSubscriptions: 0
+                },
+                message: 'No records found'
             });
         }
 
@@ -503,10 +507,14 @@ const getSubscriptionBudgetByManager = async (req, res) => {
         const clinisists = await Clinisist.find({ createdBy: managerId });
 
         if (!clinisists || clinisists.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No clinisists found created by this manager'
+            return res.status(200).json({
+                status: 'success',
+                body: {
+                    monthlyEarnings: {},
+                    totalEarningsThisYear: 0,
+                    allTimeEarnings: 0
+                },
+                message: 'No records found'
             });
         }
 
@@ -608,10 +616,14 @@ const getManagerEarnings = async (req, res) => {
         const clinisists = await Clinisist.find({ createdBy: managerId });
 
         if (!clinisists || clinisists.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
-                message: 'No clinisists found created by this manager'
+            return res.status(200).json({
+                status: 'success',
+                body: {
+                    currentMonthEarnings: 0,
+                    currentYearEarnings: 0,
+                    totalEarnings: 0
+                },
+                message: 'No records found'
             });
         }
 

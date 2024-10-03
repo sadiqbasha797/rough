@@ -203,6 +203,13 @@ const updateOrganization = async (req, res) => {
 const getOrganization = async (req, res) => {
     try {
         const organization = await Organization.findById(req.organization.id).select('-password');
+        if (!organization) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No organization found'
+            });
+        }
         res.json({
             status: 'success',
             body: organization,
@@ -223,10 +230,10 @@ const getClinisistsByOrganization = async (req, res) => {
         const  organizationId  = req.organization._id;
         console.log(organizationId);
         const clinisists = await Clinisist.find({ organization: organizationId });
-        if (!clinisists.length) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
+        if (!clinisists || clinisists.length === 0) {
+            return res.status(200).json({
+                status: 'success',
+                body: [],
                 message: 'No Clinisists found for the specified organization'
             });
         }
@@ -251,10 +258,10 @@ const getActiveClinisistsByOrganization = async (req, res) => {
         const  organizationId  = req.organization._id;
         const activeClinisists = await Clinisist.find({ organization: organizationId, Active: 'yes' });
 
-        if (!activeClinisists.length) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
+        if (!activeClinisists || activeClinisists.length === 0) {
+            return res.status(200).json({
+                status: 'success',
+                body: [],
                 message: 'No active Clinisists found for the specified organization'
             });
         }
@@ -279,10 +286,10 @@ const getInactiveClinisistsByOrganization = async (req, res) => {
         const  organizationId  = req.organization._id;
         const inactiveClinisists = await Clinisist.find({ organization: organizationId, Active: 'no' });
 
-        if (!inactiveClinisists.length) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
+        if (!inactiveClinisists || inactiveClinisists.length === 0) {
+            return res.status(200).json({
+                status: 'success',
+                body: [],
                 message: 'No inactive Clinisists found for the specified organization'
             });
         }
@@ -329,9 +336,9 @@ const getCreatedByClinisist = async (req, res) => {
         const clinisists = await Clinisist.find({ createdBy: organizationId });
 
         if (!clinisists || clinisists.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                body: null,
+            return res.status(200).json({
+                status: 'success',
+                body: [],
                 message: 'No clinisists found for this organization'
             });
         }
@@ -400,6 +407,14 @@ const getOrganizationPlans = async (req, res) => {
             planType: 'organization-plan' 
         });
 
+        if (!plans || plans.length === 0) {
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No organization plans found'
+            });
+        }
+
         res.status(200).json({
             status: 'success',
             body: plans,
@@ -454,7 +469,7 @@ const getOrganizationPlanById = async (req, res) => {
 const updateOrganizationPlan = async (req, res) => {
     try {
         const { planId } = req.params;
-        const { name, price, details, validity } = req.body;
+        const { name, price, details, validity, status } = req.body;
         const organizationId = req.organization._id;
 
         const plan = await Plan.findOne({ 
@@ -475,7 +490,7 @@ const updateOrganizationPlan = async (req, res) => {
         plan.price = price || plan.price;
         plan.details = details || plan.details;
         plan.validity = validity || plan.validity;
-
+        plan.status = status || plan.status;
         await plan.save();
 
         res.status(200).json({
@@ -536,6 +551,14 @@ const getOrganizationPatients = async (req, res) => {
             .populate('patient', '-password')
             .populate('plan', 'name price validity');
         
+        if (!subscriptions || subscriptions.length === 0) {
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No patients found for this organization'
+            });
+        }
+
         const patientsWithPlans = subscriptions.map(sub => ({
             ...sub.patient.toObject(),
             subscription: {
@@ -609,6 +632,14 @@ const getOrganizationSubscriptions = async (req, res) => {
             .populate('clinisist')
             .populate('organization');
         
+        if (!subscriptions || subscriptions.length === 0) {
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No subscriptions found for this organization'
+            });
+        }
+
         res.json({
             status: 'success',
             body: subscriptions,
@@ -996,8 +1027,6 @@ const deleteManager = async (req, res) => {
         });
     }
 };
-
-
 
 module.exports = {
     getClinisistsByOrganization,

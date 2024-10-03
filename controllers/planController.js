@@ -50,7 +50,7 @@ const createPortalPlan = async (req, res) => {
 
 const updatePlan = async (req, res) => {
     const {id} = req.params;
-    const {name, price, details, validity} = req.body;
+    const {name, price, details, validity, status} = req.body;
 
     try {
         const plan = await Plan.findById(id);
@@ -70,7 +70,7 @@ const updatePlan = async (req, res) => {
         plan.price = price || plan.price;
         plan.details = details || plan.details;
         plan.validity = validity || plan.validity;
-
+        plan.status = status || plan.status;
         const updatedPlan = await plan.save();
 
         res.json(updatedPlan);
