@@ -10,6 +10,7 @@ const Patient = require('../models/patient');
 const moment = require('moment');
 const OrgAdmin = require('../models/orgAdmin');
 const Manager = require('../models/manager');
+const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
 
 const registerOrganization = async (req, res) => {
     const { name, email, password } = req.body;
@@ -121,6 +122,79 @@ const loginOrganization = async (req, res) => {
             status: 'error',
             body: null,
             message: err.message
+        });
+    }
+};
+
+
+
+const updateOrganization = async (req, res) => {
+    try {
+        const organizationId = req.organization.id;
+        const updateData = req.body;
+        const imageFile = req.file; // Assuming you're using multer for file upload
+
+        // Remove sensitive fields that shouldn't be updated directly
+        delete updateData.password;
+        delete updateData.email;
+        delete updateData.verified;
+        delete updateData.active;
+
+        // Find the current organization data
+        const currentOrg = await Organization.findById(organizationId);
+
+        if (!currentOrg) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Organization not found'
+            });
+        }
+
+        // Handle image upload if a new image is provided
+        if (imageFile) {
+            const fileContent = imageFile.buffer;
+            const fileName = `org_${organizationId}_${Date.now()}_${imageFile.originalname}`;
+            const mimeType = imageFile.mimetype;
+
+            try {
+                // Upload new image
+                const imageUrl = await uploadFile(fileContent, fileName, mimeType);
+                updateData.image = imageUrl;
+
+                // Delete old image if it exists
+                if (currentOrg.image) {
+                    const oldImageKey = currentOrg.image.split('/').pop();
+                    await deleteFile(oldImageKey);
+                }
+            } catch (uploadError) {
+                console.error('Error uploading image:', uploadError);
+                return res.status(500).json({
+                    status: 'error',
+                    body: null,
+                    message: 'Error uploading image'
+                });
+            }
+        }
+
+        // Update the organization
+        const updatedOrganization = await Organization.findByIdAndUpdate(
+            organizationId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.json({
+            status: 'success',
+            body: updatedOrganization,
+            message: 'Organization updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating Organization:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating Organization'
         });
     }
 };
@@ -340,6 +414,42 @@ const getOrganizationPlans = async (req, res) => {
         });
     }
 };
+
+
+const getOrganizationPlanById = async (req, res) => {
+    try {
+        const { planId } = req.params;
+        const organizationId = req.organization._id;
+
+        const plan = await Plan.findOne({ 
+            _id: planId, 
+            createdBy: organizationId, 
+            planType: 'organization-plan' 
+        });
+
+        if (!plan) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Plan not found or does not belong to this organization'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: plan,
+            message: 'Organization plan retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching organization plan:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching organization plan'
+        });
+    }
+};
+
 
 const updateOrganizationPlan = async (req, res) => {
     try {
@@ -893,6 +1003,7 @@ module.exports = {
     getClinisistsByOrganization,
     registerOrganization,
     loginOrganization,
+    updateOrganization,
     getOrganization,
     getActiveClinisistsByOrganization,
     getInactiveClinisistsByOrganization, 
@@ -900,6 +1011,7 @@ module.exports = {
     getCreatedByClinisist,
     createOrganizationPlan,
     getOrganizationPlans,
+    getOrganizationPlanById,
     updateOrganizationPlan,
     deleteOrganizationPlan, 
     getOrganizationPatients,

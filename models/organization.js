@@ -15,13 +15,13 @@ const organizationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    verified :{
-        type : Boolean,
-        default : false
+    verified: {
+        type: Boolean,
+        default: false
     },
-    image : {
-        type : String,
-        required : false,
+    image: {
+        type: String,
+        required: false,
     },      
     otp: {
         type: String,
@@ -31,11 +31,43 @@ const organizationSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
-    active : {
-        type : Boolean,
-        default : false
+    active: {
+        type: Boolean,
+        default: false
+    },
+    founder: {
+        type: String,
+    },
+    companyName: {
+        type: String,
+    },
+    established: {
+        type: Date,
+    },
+    address: {
+        type: String,
+    },
+    mobile: {
+        type: String,
+    },
+    socialProfile: {
+        instagram: {
+            type: String,
+            default: null
+        },
+        twitter: {
+            type: String,
+            default: null
+        },
+        facebook: {
+            type: String,
+            default: null
+        },
+        linkedin: {
+            type: String,
+            default: null
+        }
     }
-    
 }, {
     timestamps: true // Automatically adds createdAt and updatedAt fields
 });

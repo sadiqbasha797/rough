@@ -1,8 +1,12 @@
 const express = require('express');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
 const { 
     registerOrganization, 
     loginOrganization, 
     getOrganization,
+    updateOrganization,
     getClinisistsByOrganization,
     getActiveClinisistsByOrganization,
     getInactiveClinisistsByOrganization, 
@@ -10,6 +14,7 @@ const {
     getCreatedByClinisist,
     createOrganizationPlan,
     getOrganizationPlans,
+    getOrganizationPlanById,
     updateOrganizationPlan,
     deleteOrganizationPlan,
     getOrganizationPatients,
@@ -41,6 +46,7 @@ const {
 router.post('/register', registerOrganization);
 router.post('/login', loginOrganization);
 router.get('/me', authOrganization, getOrganization);
+router.put('/update', authOrganization, upload.single('image'), updateOrganization);
 router.get('/doctors',authOrganization, getClinisistsByOrganization);
 router.get('/doctors/active',authOrganization, getActiveClinisistsByOrganization);
 router.get('/doctors/inactive',authOrganization, getInactiveClinisistsByOrganization);
@@ -56,6 +62,7 @@ router.get('/managers/inactive',authOrganization, getInactiveManagersByOrganizat
 router.get('/managers/counts',authOrganization, getManagersCountByOrganization);
 router.post('/create-plan', authOrganization, createOrganizationPlan);
 router.get('/plans', authOrganization, getOrganizationPlans);
+router.get('/plan/:planId', authOrganization, getOrganizationPlanById);
 router.put('/plan/:planId', authOrganization, updateOrganizationPlan);
 router.delete('/plan/:planId', authOrganization, deleteOrganizationPlan);
 router.get('/patients', authOrganization, getOrganizationPatients);
