@@ -25,6 +25,7 @@ const {
     updateManager,
     deleteOrgAdmin,
     deleteManager,
+    getNotifications,
  } = require('../controllers/organizationController');
 
  const {
@@ -73,5 +74,5 @@ router.put('/orgadmin/:orgAdminId', authOrganization, updateOrgAdmin);
 router.put('/manager/:managerId', authOrganization, updateManager);
 router.delete('/orgadmin/:orgAdminId', authOrganization, deleteOrgAdmin);
 router.delete('/manager/:managerId', authOrganization, deleteManager);
-
+router.get('/notifications', authOrganization, getNotifications);
 module.exports = router;

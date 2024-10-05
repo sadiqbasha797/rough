@@ -6,7 +6,8 @@ const createNotification  = require('../utils/createNotification');
 const Organization = require('../models/organization');
 const Clinisist = require('../models/Clinisist');
 const Subscription = require('../models/subscription');
-
+const Notification = require('../models/Notification');
+    
 const registerManager = async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -706,6 +707,27 @@ const getManagerEarnings = async (req, res) => {
     }
 };
 
+const getNotifications = async (req, res) => {
+    try {
+        const notifications = await Notification.find({
+            'recipient.id': req.manager._id,
+            'recipient.model': 'Manager'
+        }).sort({ createdAt: -1 }); // Sort by most recent first
+
+        res.status(200).json({
+            status: "success",
+            body: notifications,
+            message: "Notifications retrieved successfully"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: error.message
+        });
+    }
+};
 
 module.exports = {
     registerManager,
@@ -723,5 +745,6 @@ module.exports = {
     getSubscriptionsOfClinisistsJoinedByManager,
     getSubscriptionCountsByManager,
     getSubscriptionBudgetByManager,
-    getManagerEarnings
+    getManagerEarnings,
+    getNotifications
 };

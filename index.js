@@ -21,6 +21,7 @@ const body = require('./routes/bodyRoutes');
 const bodyassessments = require('./routes/bodyAssessmentRoutes');
 const cors = require('cors');
 const orgSubscriptionRoutes = require('./routes/orgSubscriptionRoutes');
+const mood = require('./routes/moodAssessmentRoutes');
 dotenv.config();
 connectDB();
 
@@ -48,6 +49,7 @@ app.use('/api/admin',color);
 app.use('/api/admin/', body);
 app.use('/api',bodyassessments);
 app.use('/api/orgSubscription', orgSubscriptionRoutes);
+app.use('/api/sub', mood);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

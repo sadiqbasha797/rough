@@ -6,6 +6,7 @@ const { createSubscription, getSubscriptionByPatient, getSubscribedClinicians } 
 const router = express.Router();
 const {changePassword,createOrUpdatePatientAnswers, getFixedQuestions, getPatientInfo} = require('../controllers/patientInfoController');
 const { createAlert } = require('../controllers/alertController');
+const {validateAndStoreAssessment,getQuestionsByType} = require('../controllers/moodAssessmentController');
 
 router.route('/profile').get(patientProtect, getPatientProfile);
 router.route('/profile/update-password').patch(patientProtect, updatePassword);
@@ -29,6 +30,6 @@ router.get('/info',patientProtect, getPatientInfo);
 router.get('/subscribed-doctors', patientProtect, getSubscribedClinicians);
 router.post('/alert', patientProtect, createAlert);
 router.put('/change-password', patientProtect, changePassword);
-
-
+router.post('/mood-assessment', patientProtect, validateAndStoreAssessment);
+router.get('/mood-assessment/:type', patientProtect, getQuestionsByType);
 module.exports = router;

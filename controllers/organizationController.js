@@ -11,6 +11,7 @@ const moment = require('moment');
 const OrgAdmin = require('../models/orgAdmin');
 const Manager = require('../models/manager');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
+const Notification = require('../models/Notification');
 
 const registerOrganization = async (req, res) => {
     const { name, email, password } = req.body;
@@ -1028,6 +1029,28 @@ const deleteManager = async (req, res) => {
     }
 };
 
+const getNotifications = async (req, res) => {
+    try {
+        const notifications = await Notification.find({
+            'recipient.id': req.organization._id,
+            'recipient.model': 'Organization'
+        }).sort({ createdAt: -1 }); // Sort by most recent first
+
+        res.status(200).json({
+            status: "success",
+            body: notifications,
+            message: "Notifications retrieved successfully"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     getClinisistsByOrganization,
     registerOrganization,
@@ -1053,4 +1076,5 @@ module.exports = {
     updateManager,
     deleteOrgAdmin,
     deleteManager,
+    getNotifications,
 };
