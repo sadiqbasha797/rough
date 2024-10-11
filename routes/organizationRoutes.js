@@ -6,7 +6,6 @@ const {
     registerOrganization, 
     loginOrganization, 
     getOrganization,
-    updateOrganization,
     getClinisistsByOrganization,
     getActiveClinisistsByOrganization,
     getInactiveClinisistsByOrganization, 
@@ -26,6 +25,8 @@ const {
     deleteOrgAdmin,
     deleteManager,
     getNotifications,
+    updateOrganizationImage,
+    updateOrganizationData,
  } = require('../controllers/organizationController');
 
  const {
@@ -47,7 +48,6 @@ const {
 router.post('/register', registerOrganization);
 router.post('/login', loginOrganization);
 router.get('/me', authOrganization, getOrganization);
-router.put('/update', authOrganization, upload.single('image'), updateOrganization);
 router.get('/doctors',authOrganization, getClinisistsByOrganization);
 router.get('/doctors/active',authOrganization, getActiveClinisistsByOrganization);
 router.get('/doctors/inactive',authOrganization, getInactiveClinisistsByOrganization);
@@ -75,4 +75,6 @@ router.put('/manager/:managerId', authOrganization, updateManager);
 router.delete('/orgadmin/:orgAdminId', authOrganization, deleteOrgAdmin);
 router.delete('/manager/:managerId', authOrganization, deleteManager);
 router.get('/notifications', authOrganization, getNotifications);
+router.put('/update-image', authOrganization, upload.single('image'), updateOrganizationImage);
+router.put('/update-data', authOrganization, updateOrganizationData);
 module.exports = router;
