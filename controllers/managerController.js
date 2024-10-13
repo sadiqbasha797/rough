@@ -366,10 +366,10 @@ const getClinisistCountsByManager = async (req, res) => {
         const totalCount = await Clinisist.countDocuments({ createdBy: managerId });
 
         // Get active count
-        const activeCount = await Clinisist.countDocuments({ createdBy: managerId, active: "yes" });
+        const activeCount = await Clinisist.countDocuments({ createdBy: managerId, Active: "yes" });
 
         // Get inactive count
-        const inactiveCount = await Clinisist.countDocuments({ createdBy: managerId, active: "yes" });
+        const inactiveCount = await Clinisist.countDocuments({ createdBy: managerId, Active: "no" });
 
         res.status(200).json({
             status: 'success',

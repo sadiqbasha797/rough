@@ -4,15 +4,8 @@ const generateToken = require('../utils/generateToken');
 const Clinisist = require('../models/Clinisist');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto'); // To generate a token
-const multer = require('multer');
 const createNotification = require('../utils/createNotification');
-const cloudinary = require('cloudinary').v2;
 
-cloudinary.config({
-  cloud_name: 'dmst4lbrx',  // Replace with your Cloudinary cloud name
-  api_key: '828194579658255',     // Replace with your Cloudinary API key
-  api_secret: '4hij7lz9E3GNXkFgGW6XnvJ1DFo'  // Replace with your Cloudinary API secret
-});
 
 
 const registerPatient = async (req, res) => {
@@ -195,12 +188,19 @@ const authPatient = async (req, res) => {
 
 
 const registerClinisist = async (req, res) => {
-    const { name, email, mobileNum, dob, password, specializedIn, address, services, about } = req.body;
+    const { 
+        name, email, mobileNum, dob, password, specializedIn, address, services, about,
+        image, licenseImage, ratings, experience, location, careerpath, highlights,
+        organization, degree, licenseNumber, licenseExpirationDate, npiNumber
+    } = req.body;
+
     try {
         const clinisistExists = await Clinisist.findOne({ email });
 
         if (clinisistExists) {
             return res.status(400).json({
+                status: 'error',
+                body: null,
                 message: 'User already exists'
             });
         }
@@ -214,24 +214,52 @@ const registerClinisist = async (req, res) => {
             mobileNum,
             dob,
             password: hashedPassword,
+            specializedIn,
             address,
-            about,
             services,
+            about,
+            image,
+            licenseImage,
+            ratings,
+            experience,
+            location,
+            careerpath,
+            highlights,
+            organization,
+            degree,
+            licenseNumber,
+            licenseExpirationDate,
+            npiNumber,
+            Active: 'yes'
         });
 
         if (clinisist) {
             res.status(201).json({
-                clinisist: clinisist,
-                token: generateToken(clinisist._id),
+                status: 'success',
+                body: {
+                    clinisist: {
+                        id: clinisist._id,
+                        name: clinisist.name,
+                        email: clinisist.email,
+                        specializedIn: clinisist.specializedIn,
+                        // Add other fields as needed
+                    },
+                    token: generateToken(clinisist._id),
+                },
+                message: 'Clinisist registered successfully'
             });
         } else {
             res.status(400).json({
+                status: 'error',
+                body: null,
                 message: 'Invalid Details'
             });
         }
     } catch (error) {
         console.log(error);
         res.status(500).json({
+            status: 'error',
+            body: null,
             message: error.message,
         });
     }

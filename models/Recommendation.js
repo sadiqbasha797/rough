@@ -4,32 +4,32 @@ const mongoose = require('mongoose');
 const mediaSchema = new mongoose.Schema({
     images: [{
         url: {
-            type: String, // URL to the image in Cloudinary
-            required: true
+            type: String, 
+            required: false
         },
         public_id: {
-            type: String, // Cloudinary public_id for easier deletion if needed
-            required: true
+            type: String, 
+            required: false
         }
     }],
     documents: [{
         url: {
-            type: String, // URL to the document in Cloudinary
-            required: true
+            type: String, 
+            required: false
         },
         public_id: {
-            type: String, // Cloudinary public_id for easier deletion if needed
-            required: true
+            type: String, 
+            required: false
         }
     }],
     videos: [{
         url: {
-            type: String, // URL to the video in Cloudinary
-            required: true
+            type: String, 
+            required: false
         },
         public_id: {
-            type: String, // Cloudinary public_id for easier deletion if needed
-            required: true
+            type: String, 
+            required: false
         }
     }]
 });
@@ -38,7 +38,7 @@ const mediaSchema = new mongoose.Schema({
 const recommendationSchema = new mongoose.Schema({
     category: {
         type: String,
-        required: true
+        required: false
     },
     recommendation: {
         type: String,
@@ -49,6 +49,11 @@ const recommendationSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, // Clinician's ID
         ref: 'Clinisist',
         required: false
+    },
+    recommendedTo: {
+        type: mongoose.Schema.Types.ObjectId, // Patient's ID
+        ref: 'Patient',
+        required: true
     },
     type: {
         type: String,

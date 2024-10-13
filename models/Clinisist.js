@@ -106,6 +106,26 @@ const ClinisistSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     required: true
+  },
+  degree: {
+    type: String,
+    required: false,
+    default: null
+  },
+  licenseNumber: {
+    type: String,
+    required: false,
+    default: null
+  },
+  licenseExpirationDate: {
+    type: Date,
+    required: false,
+    default: null
+  },
+  npiNumber: {
+    type: String,
+    required: false,
+    default: null
   }
 }, { timestamps: true }); 
 

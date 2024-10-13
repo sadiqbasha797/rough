@@ -201,4 +201,8 @@ const getSubscribedClinicians = async (req, res) => {
 
 
 
-module.exports = {createSubscription, getSubscriptionByPatient, getSubscribedClinicians};
+module.exports = {
+    createSubscription, 
+    getSubscriptionByPatient, 
+    getSubscribedClinicians
+};

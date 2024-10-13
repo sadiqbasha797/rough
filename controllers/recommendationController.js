@@ -2,24 +2,33 @@ const Recommendation = require('../models/Recommendation');
 const s3Util = require('../utils/s3Util');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid'); // For generating unique file names
+const createNotification = require('../utils/createNotification');
 
 // Multer setup to handle file uploads
 const storage = multer.memoryStorage(); // Store files in memory temporarily
-const upload = multer({ storage: storage }).fields([
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+}).fields([
     { name: 'images', maxCount: 10 },
     { name: 'documents', maxCount: 10 },
     { name: 'videos', maxCount: 10 }
 ]);
 
+
 // Create a new recommendation
 const createRecommendation = (req, res) => {
     upload(req, res, async (err) => {
-        if (err) {
-            console.error('Error uploading media:', err);
-            return res.status(500).json({ status: 'error', body: null, message: 'Error uploading media' });
+        if (err instanceof multer.MulterError) {
+            // A Multer error occurred when uploading.
+            return res.status(400).json({ status: 'error', body: null, message: `Multer upload error: ${err.message}` });
+        } else if (err) {
+            // An unknown error occurred when uploading.
+            return res.status(500).json({ status: 'error', body: null, message: `Unknown upload error: ${err.message}` });
         }
 
-        const { category, recommendation, recommendedBy, type } = req.body;
+        const { category, recommendation, type, recommendedTo } = req.body;
+        const recommendedBy = req.clinisist._id; // Assuming the clinisist ID is available in the request
         const relatedMedia = {
             images: [],
             documents: [],
@@ -27,30 +36,14 @@ const createRecommendation = (req, res) => {
         };
 
         try {
-            // Process uploaded images
-            if (req.files.images) {
-                for (const file of req.files.images) {
-                    const key = `images/${uuidv4()}_${file.originalname}`;
-                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                    relatedMedia.images.push({ url, public_id: key });
-                }
-            }
-
-            // Process uploaded documents
-            if (req.files.documents) {
-                for (const file of req.files.documents) {
-                    const key = `documents/${uuidv4()}_${file.originalname}`;
-                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                    relatedMedia.documents.push({ url, public_id: key });
-                }
-            }
-
-            // Process uploaded videos
-            if (req.files.videos) {
-                for (const file of req.files.videos) {
-                    const key = `videos/${uuidv4()}_${file.originalname}`;
-                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                    relatedMedia.videos.push({ url, public_id: key });
+            // Process uploaded files
+            for (const mediaType of ['images', 'documents', 'videos']) {
+                if (req.files[mediaType]) {
+                    for (const file of req.files[mediaType]) {
+                        const key = `${mediaType}/${uuidv4()}_${file.originalname}`;
+                        const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                        relatedMedia[mediaType].push({ url, public_id: key });
+                    }
                 }
             }
 
@@ -60,10 +53,22 @@ const createRecommendation = (req, res) => {
                 recommendation,
                 relatedMedia,
                 recommendedBy,
+                recommendedTo,
                 type
             });
 
             await newRecommendation.save();
+
+            // Create a notification for the patient
+            const notificationMessage = `You have a new ${category} recommendation from your clinician.`;
+            await createNotification(
+                recommendedTo,
+                'Patient',
+                notificationMessage,
+                recommendedBy,
+                'Clinisist',
+                'general'
+            );
 
             res.status(201).json({
                 status: 'success',
@@ -125,16 +130,19 @@ const getRecommendationById = async (req, res) => {
 };
 
 // Update a recommendation
-const updateRecommendation = async (req, res) => {
+const updateRecommendation = (req, res) => {
     upload(req, res, async (err) => {
-        if (err) {
-            console.error('Error uploading media:', err);
-            return res.status(500).json({ status: 'error', body: null, message: 'Error uploading media' });
+        if (err instanceof multer.MulterError) {
+            // A Multer error occurred when uploading.
+            return res.status(400).json({ status: 'error', body: null, message: `Multer upload error: ${err.message}` });
+        } else if (err) {
+            // An unknown error occurred when uploading.
+            return res.status(500).json({ status: 'error', body: null, message: `Unknown upload error: ${err.message}` });
         }
 
         try {
             const recommendationId = req.params.id;
-            const { category, recommendation, recommendedBy, type } = req.body;
+            const { category, recommendation, type, recommendedTo } = req.body;
             const mediaUpdates = {
                 images: [],
                 documents: [],
@@ -142,27 +150,13 @@ const updateRecommendation = async (req, res) => {
             };
 
             // Process new media uploads
-            if (req.files.images) {
-                for (const file of req.files.images) {
-                    const key = `images/${uuidv4()}_${file.originalname}`;
-                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                    mediaUpdates.images.push({ url, public_id: key });
-                }
-            }
-
-            if (req.files.documents) {
-                for (const file of req.files.documents) {
-                    const key = `documents/${uuidv4()}_${file.originalname}`;
-                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                    mediaUpdates.documents.push({ url, public_id: key });
-                }
-            }
-
-            if (req.files.videos) {
-                for (const file of req.files.videos) {
-                    const key = `videos/${uuidv4()}_${file.originalname}`;
-                    const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                    mediaUpdates.videos.push({ url, public_id: key });
+            for (const mediaType of ['images', 'documents', 'videos']) {
+                if (req.files[mediaType]) {
+                    for (const file of req.files[mediaType]) {
+                        const key = `${mediaType}/${uuidv4()}_${file.originalname}`;
+                        const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                        mediaUpdates[mediaType].push({ url, public_id: key });
+                    }
                 }
             }
 
@@ -172,8 +166,8 @@ const updateRecommendation = async (req, res) => {
                 {
                     category,
                     recommendation,
-                    recommendedBy,
                     type,
+                    recommendedTo,
                     $push: {
                         'relatedMedia.images': { $each: mediaUpdates.images },
                         'relatedMedia.documents': { $each: mediaUpdates.documents },
@@ -323,20 +317,19 @@ const getPortalRecommendations = async (req, res) => {
 };
 
 
-// Create a new recommendation
+// Create a new doctor recommendation
 const createDoctorRecommendation = (req, res) => {
     upload(req, res, async (err) => {
-        if (err) {
-            console.error('Error uploading media:', err);
-            return res.status(500).json({
-                status: 'error',
-                body: null,
-                message: 'Error uploading media'
-            });
+        if (err instanceof multer.MulterError) {
+            // A Multer error occurred when uploading.
+            return res.status(400).json({ status: 'error', body: null, message: `Multer upload error: ${err.message}` });
+        } else if (err) {
+            // An unknown error occurred when uploading.
+            return res.status(500).json({ status: 'error', body: null, message: `Unknown upload error: ${err.message}` });
         }
 
-        const { category, recommendation, type } = req.body;
-        const recommendedBy = req.clinisist._id; // Assuming clinician's ID is stored in req.user._id
+        const { category, recommendation, type, recommendedTo } = req.body;
+        const recommendedBy = req.clinisist._id; // Assuming clinician's ID is stored in req.clinisist._id
         const relatedMedia = {
             images: [],
             documents: [],
@@ -344,19 +337,13 @@ const createDoctorRecommendation = (req, res) => {
         };
 
         // Process uploaded files and store URLs and public_ids in relatedMedia
-        if (req.files.images) {
-            req.files.images.forEach(file => {
-                relatedMedia.images.push({ url: file.path, public_id: file.filename });
-            });
-        }
-        if (req.files.documents) {
-            req.files.documents.forEach(file => {
-                relatedMedia.documents.push({ url: file.path, public_id: file.filename });
-            });
-        }
-        if (req.files.videos) {
-            req.files.videos.forEach(file => {
-                relatedMedia.videos.push({ url: file.path, public_id: file.filename });
+        if (req.files) {
+            ['images', 'documents', 'videos'].forEach(mediaType => {
+                if (req.files[mediaType]) {
+                    req.files[mediaType].forEach(file => {
+                        relatedMedia[mediaType].push({ url: file.path, public_id: file.filename });
+                    });
+                }
             });
         }
 
@@ -366,9 +353,21 @@ const createDoctorRecommendation = (req, res) => {
                 recommendation,
                 relatedMedia,
                 recommendedBy,
+                recommendedTo, // Include this field
                 type: 'doctor' // Set the type to 'doctor' for clinician recommendations
             });
             await newRecommendation.save();
+
+            // Create a notification for the patient
+            const notificationMessage = `You have a new ${category} recommendation from your clinician.`;
+            await createNotification(
+                recommendedTo,
+                'Patient',
+                notificationMessage,
+                recommendedBy,
+                'Clinisist',
+                'general'
+            );
 
             res.status(201).json({
                 status: 'success',

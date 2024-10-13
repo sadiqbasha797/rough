@@ -8,6 +8,8 @@ const AWS = require('aws-sdk');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
 const storage = multer.memoryStorage(); // Store files in memory temporarily
 const upload = multer({ storage: storage });
+const Subscription = require('../models/subscription');
+const AssessmentInfo = require('../models/assessmentInfo');
 
 // Update Doctor's Image using S3
 const updateDoctorImage = async (req, res) => {
@@ -111,13 +113,13 @@ const deleteClinisist = async (req, res) => {
         const clinisist = await Clinisist.findById(req.clinisist._id);
 
         if (clinisist) {
-            const plans = await Plan.find({status: 'Active', createdBy: req.clinisist._id});
+            const plans = await Plan.find({ status: 'Active', createdBy: req.clinisist._id });
             if (plans) {
                 return res.status(403).json({
                     message: "Can't delete your account while you have Active Plans",
                 });
             }
-            await Clinisist.deleteOne({_id: req.clinisist._id });
+            await Clinisist.deleteOne({ _id: req.clinisist._id });
             res.json({ message: "Clinisist deleted successfully" });
         } else {
             res.status(404).json({ message: "Clinisist not found" });
@@ -158,8 +160,12 @@ const getNotifications = async (req, res) => {
 
 const updateDoctor = async (req, res) => {
     try {
-        const {Active, name, email, mobileNum, dob, specializedIn, address, about, services, ratings, experince, location, careerpath, highlights } = req.body;
-        
+        const {
+            Active, name, email, mobileNum, dob, specializedIn, address, about, services,
+            ratings, experience, location, careerpath, highlights, organization,
+            degree, licenseNumber, licenseExpirationDate, npiNumber
+        } = req.body;
+
         // Find the clinisist by ID (extracted from the token by middleware)
         const clinisist = await Clinisist.findById(req.clinisist._id);
 
@@ -167,9 +173,9 @@ const updateDoctor = async (req, res) => {
             return res.status(404).json({ status: "error", message: "Clinisist not found" });
         }
 
-        // Update the fields (excluding password, image, licenseImage, verified)
-        clinisist.name = name || clinisist.name;
+        // Update the fields
         clinisist.Active = Active || clinisist.Active;
+        clinisist.name = name || clinisist.name;
         clinisist.email = email || clinisist.email;
         clinisist.mobileNum = mobileNum || clinisist.mobileNum;
         clinisist.dob = dob || clinisist.dob;
@@ -178,10 +184,15 @@ const updateDoctor = async (req, res) => {
         clinisist.about = about || clinisist.about;
         clinisist.services = services || clinisist.services;
         clinisist.ratings = ratings || clinisist.ratings;
-        clinisist.experince = experince || clinisist.experince;
+        clinisist.experience = experience || clinisist.experience;
         clinisist.location = location || clinisist.location;
         clinisist.careerpath = careerpath || clinisist.careerpath;
         clinisist.highlights = highlights || clinisist.highlights;
+        clinisist.organization = organization || clinisist.organization;
+        clinisist.degree = degree || clinisist.degree;
+        clinisist.licenseNumber = licenseNumber || clinisist.licenseNumber;
+        clinisist.licenseExpirationDate = licenseExpirationDate || clinisist.licenseExpirationDate;
+        clinisist.npiNumber = npiNumber || clinisist.npiNumber;
 
         // Save the updated clinisist details
         await clinisist.save();
@@ -192,13 +203,137 @@ const updateDoctor = async (req, res) => {
             body: clinisist
         });
     } catch (error) {
+        console.error(error);
         res.status(500).json({
             status: "error",
             message: "An error occurred while updating the profile",
             error: error.message
         });
     }
-}
+};
 
+const getSubscribedPatients = async (req, res) => {
+    try {
+        const clinisistId = req.clinisist._id;
 
-module.exports = {getClinisistProfile, updatePassword, updateUserName, deleteClinisist, getNotifications,updateDoctorImage,upload,updateDoctor };
+        // Find all subscriptions for this clinisist
+        const subscriptions = await Subscription.find({
+            clinisist: clinisistId,
+            endDate: { $gte: new Date() } // Only active subscriptions
+        }).populate('plan');
+
+        // Extract patient IDs from subscriptions
+        const patientIds = subscriptions.map(sub => sub.patient);
+
+        // Fetch full patient information
+        const patients = await Patient.find({ _id: { $in: patientIds } });
+
+        // Combine patient info with subscription details
+        const subscribedPatients = patients.map(patient => {
+            const subscription = subscriptions.find(sub => sub.patient.equals(patient._id));
+            return {
+                patient: patient,
+                subscription: {
+                    planName: subscription.plan.name,
+                    startDate: subscription.startDate,
+                    endDate: subscription.endDate,
+                    renewal: subscription.renewal
+                }
+            };
+        });
+
+        res.status(200).json({
+            status: "success",
+            message: "Subscribed patients fetched successfully",
+            body: subscribedPatients
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: "error",
+            message: "An error occurred while fetching subscribed patients",
+            error: error.message
+        });
+    }
+};
+
+const getSubscribedPatientsAssessments = async (req, res) => {
+    try {
+        const clinisistId = req.clinisist._id;
+
+        // Find all active subscriptions for this clinisist
+        const subscriptions = await Subscription.find({
+            clinisist: clinisistId,
+            endDate: { $gte: new Date() }
+        }).populate('plan');
+
+        // Extract patient IDs from subscriptions
+        const patientIds = subscriptions.map(sub => sub.patient);
+
+        // Fetch patients and their latest assessment info
+        const patientsWithAssessments = await Patient.aggregate([
+            { $match: { _id: { $in: patientIds } } },
+            {
+                $lookup: {
+                    from: 'assessmentinfos',
+                    let: { patientId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$patientId', '$$patientId'] } } },
+                        { $sort: { createdAt: -1 } },
+                        { $limit: 1 }
+                    ],
+                    as: 'latestAssessment'
+                }
+            },
+            { $unwind: { path: '$latestAssessment', preserveNullAndEmptyArrays: true } }
+        ]);
+
+        // Combine patient info with subscription and assessment details
+        const subscribedPatientsWithAssessments = patientsWithAssessments.map(patient => {
+            const subscription = subscriptions.find(sub => sub.patient.equals(patient._id));
+            return {
+                patient: {
+                    _id: patient._id,
+                    userName: patient.userName,
+                    email: patient.email,
+                    dateOfBirth: patient.dateOfBirth,
+                    mobile: patient.mobile,
+                    // Add other patient fields as needed
+                },
+                subscription: {
+                    planName: subscription.plan.name,
+                    startDate: subscription.startDate,
+                    endDate: subscription.endDate,
+                    renewal: subscription.renewal
+                },
+                latestAssessment: patient.latestAssessment || null
+            };
+        });
+
+        res.status(200).json({
+            status: "success",
+            message: "Subscribed patients' assessments fetched successfully",
+            body: subscribedPatientsWithAssessments
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: "error",
+            message: "An error occurred while fetching subscribed patients' assessments",
+            error: error.message
+        });
+    }
+};
+
+module.exports = {
+    getClinisistProfile,
+    updatePassword,
+    updateUserName,
+    deleteClinisist,
+    getNotifications,
+    updateDoctorImage,
+    upload,
+    updateDoctor,
+    getSubscribedPatients,
+    getSubscribedPatientsAssessments
+};

@@ -181,4 +181,12 @@ const getPortalPlans = async (req, res) => {
 
 
 
-module.exports = {createPlan, updatePlan, getPlansByClincist, deletePlan, showActivePlans,createPortalPlan,getDoctorPlans,getPortalPlans};
+module.exports = {
+    createPlan, 
+    updatePlan, 
+    getPlansByClincist, 
+    deletePlan, 
+    showActivePlans,
+    createPortalPlan,
+    getDoctorPlans,
+    getPortalPlans};

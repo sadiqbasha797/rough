@@ -41,6 +41,7 @@ router.post('/portal-plan', adminAuth, createPortalPlan);
 router.get('/organizations', adminAuth, getAllOrganizations);
 router.get('/organization-stats', adminAuth, getOrganizationStats);
 
+router.route('/create-plan').post(adminAuth, createPortalPlan);
 router.get('/portal-plans', adminAuth, getPortalPlans);
 router.get('/portal-plans/:id', adminAuth, getPortalPlanById);
 router.put('/portal-plans/:id', adminAuth, updatePortalPlan);
