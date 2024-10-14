@@ -11,7 +11,7 @@ const createPlan = async (req, res) => {
             price,
             details,
             validity,
-            createdBy: req.clinisist._id,
+            createdBy: req.admin._id,
             planType: 'doctor-plan' // Set the planType to 'doctor-plan'
         });
 
@@ -189,4 +189,5 @@ module.exports = {
     showActivePlans,
     createPortalPlan,
     getDoctorPlans,
-    getPortalPlans};
+    getPortalPlans
+};

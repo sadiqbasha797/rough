@@ -251,32 +251,33 @@ const deleteRecommendation = async (req, res) => {
 
 
 
-// Fetch Doctor Recommendations by Category
+// Fetch Doctor Recommendations by Category for a specific patient
 const getDoctorRecommendations = async (req, res) => {
     try {
         const category = req.params.category;
+        const patientId = req.patient._id; // Assuming patient's ID is stored in req.patient._id after token authentication
 
-        // Fetch recommendations of type 'doctor' and populate the recommendedBy field with the clinician's details
+        // Fetch recommendations of type 'doctor' for the specific patient and populate the recommendedBy field with the clinician's details
         const doctorRecommendations = await Recommendation.find({
-            category: category,
-            type: 'doctor'
+            type: 'doctor',
+            recommendedTo: patientId
         }).populate('recommendedBy'); // Populate with Clinisist data
 
         if (doctorRecommendations.length === 0) {
             return res.status(404).json({
                 status: "error",
                 body: null,
-                message: "No doctor recommendations found for this category"
+                message: "No doctor recommendations found for this category and patient"
             });
         }
 
         res.json({
             status: "success",
             body: doctorRecommendations,
-            message: "Doctor recommendations retrieved successfully"
+            message: "Doctor recommendations retrieved successfully for the patient"
         });
     } catch (error) {
-        console.log(error);
+        console.error('Error retrieving doctor recommendations:', error);
         res.status(500).json({
             status: "error",
             body: null,
@@ -285,29 +286,31 @@ const getDoctorRecommendations = async (req, res) => {
     }
 };
 
-// Fetch Portal Recommendations by Category
+// Fetch Portal Recommendations by Category for a specific patient
 const getPortalRecommendations = async (req, res) => {
     try {
-        const category = req.params.category;
+        const patientId = req.patient._id; // Get patient ID from the token
+
         const portalRecommendations = await Recommendation.find({
-            category: category,
-            type: 'portal'
+            type: 'portal',
+            recommendedTo: patientId
         });
 
         if (portalRecommendations.length === 0) {
             return res.status(404).json({
                 status: "error",
                 body: null,
-                message: "No portal recommendations found for this category"
+                message: "No portal recommendations found for this patient"
             });
         }
 
         res.json({
             status: "success",
             body: portalRecommendations,
-            message: "Portal recommendations retrieved successfully"
+            message: "Portal recommendations retrieved successfully for the patient"
         });
     } catch (error) {
+        console.error('Error retrieving portal recommendations:', error);
         res.status(500).json({
             status: "error",
             body: null,
@@ -315,7 +318,6 @@ const getPortalRecommendations = async (req, res) => {
         });
     }
 };
-
 
 // Create a new doctor recommendation
 const createDoctorRecommendation = (req, res) => {
@@ -445,6 +447,75 @@ const deleteMedia = async (req, res) => {
     }
 };
 
+// Fetch recommendations for a clinician's subscribed patient
+const getRecommendationsForSubscribedPatient = async (req, res) => {
+    try {
+        const clinicianId = req.clinisist._id; // Assuming clinician's ID is stored in req.clinisist._id
+        const patientId = req.body.patientId; // Taking patient ID from the request body
+
+        // Fetch recommendations for the specific patient recommended by the clinician
+        const recommendations = await Recommendation.find({
+            recommendedBy: clinicianId,
+            recommendedTo: patientId
+        }).populate('recommendedBy', 'name'); // Populate with clinician's name
+
+        if (recommendations.length === 0) {
+            return res.json({
+                status: "success",
+                body: [],
+                message: "No recommendations found for this patient"
+            });
+        }
+
+        res.json({
+            status: "success",
+            body: recommendations,
+            message: "Recommendations retrieved successfully for the patient"
+        });
+    } catch (error) {
+        console.error('Error retrieving recommendations:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while retrieving recommendations"
+        });
+    }
+};
+
+// Fetch portal recommendations for a patient
+const getPortalRecommendationsForPatient = async (req, res) => {
+    try {
+        const patientId = req.body.patientId; // Taking patient ID from the request body
+
+        // Fetch portal recommendations for the specific patient
+        const portalRecommendations = await Recommendation.find({
+            recommendedTo: patientId,
+            type: 'portal'
+        }).populate('recommendedBy', 'name'); // Populate with clinician's name
+
+        if (portalRecommendations.length === 0) {
+            return res.json({
+                status: "success",
+                body: [],
+                message: "No portal recommendations found for this patient"
+            });
+        }
+
+        res.json({
+            status: "success",
+            body: portalRecommendations,
+            message: "Portal recommendations retrieved successfully for the patient"
+        });
+    } catch (error) {
+        console.error('Error retrieving portal recommendations:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while retrieving portal recommendations"
+        });
+    }
+};
+
 
 module.exports = {
     deleteMedia,
@@ -455,5 +526,7 @@ module.exports = {
     updateRecommendation,
     deleteRecommendation,
     getDoctorRecommendations,
-    getPortalRecommendations
+    getPortalRecommendations,
+    getRecommendationsForSubscribedPatient,
+    getPortalRecommendationsForPatient
 };

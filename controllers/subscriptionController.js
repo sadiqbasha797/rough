@@ -31,7 +31,7 @@ const createSubscription = async (req, res) => {
         let subscriptionClinisistId = null;
         let organizationId = null;
         if (plan.planType === 'doctor-plan') {
-            subscriptionClinisistId = plan.createdBy;
+            subscriptionClinisistId = clinisistId;
         } else if (plan.planType === 'organization-plan') {
             organizationId = plan.createdBy;
             subscriptionClinisistId = clinisistId; // Use the provided clinisistId for organization plans
