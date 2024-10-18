@@ -24,7 +24,13 @@ const {
     deletePortalClinician,
     getPortalClinicianCounts,
     getPortalPlanPatientAssessments,
-    getAllAssessmentInfos
+    getAllAssessmentInfos,
+    getAllSubscriptions,
+    getAllSubscriptionsMonthWise,
+    getDoctorPlanSubscriptions,
+    getDoctorPlanSubscriptionsMonthWise,
+    getPortalSubscriptionsMonthWise
+       
  } = require('../controllers/adminController');
 const {createPortalPlan, createPlan} = require('../controllers/planController');
 require('../config/passport');
@@ -65,4 +71,9 @@ router.get('/doctors-counts', adminAuth, getPortalClinicianCounts);
 router.get('/patient-assessments', adminAuth, getPortalPlanPatientAssessments);
 router.get('/all-assessments', adminAuth, getAllAssessmentInfos);
 
+router.get('/all-subscriptions', adminAuth, getAllSubscriptions);
+router.get('/all-subscriptions-month-wise', adminAuth, getAllSubscriptionsMonthWise);
+router.get('/doctor-plan-subscriptions', adminAuth, getDoctorPlanSubscriptions);
+router.get('/doctor-plan-subscriptions-month-wise', adminAuth, getDoctorPlanSubscriptionsMonthWise);
+router.get('/portal-subscriptions-month-wise', adminAuth, getPortalSubscriptionsMonthWise);
 module.exports = router;

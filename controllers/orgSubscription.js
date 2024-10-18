@@ -264,6 +264,40 @@ const manualCheckExpiredSubscriptions = async (req, res) => {
     }
 };
 
+// Get subscription counts
+const getSubscriptionCounts = async (req, res) => {
+    try {
+        const currentDate = new Date();
+
+        const validSubscriptions = await OrgSubscription.countDocuments({
+            endDate: { $gte: currentDate }
+        });
+
+        const renewalSubscriptions = await OrgSubscription.countDocuments({
+            renewal: true
+        });
+
+        const endedSubscriptions = await OrgSubscription.countDocuments({
+            endDate: { $lt: currentDate }
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                validSubscriptions,
+                renewalSubscriptions,
+                endedSubscriptions
+            },
+            message: 'Subscription counts retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     createOrgSubscription,
     getAllOrgSubscriptions,
@@ -271,5 +305,6 @@ module.exports = {
     updateOrgSubscription,
     deleteOrgSubscription,
     checkAndUpdateExpiredSubscriptions,
-    manualCheckExpiredSubscriptions
+    manualCheckExpiredSubscriptions,
+    getSubscriptionCounts
 };

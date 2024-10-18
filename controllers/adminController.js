@@ -892,6 +892,309 @@ const getAllAssessmentInfos = async (req, res) => {
     }
 };
 
+const getDoctorPlanSubscriptions = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = {};
+
+        if (startDate && endDate) {
+            dateFilter = {
+                startDate: { $gte: new Date(startDate) },
+                endDate: { $lte: new Date(endDate) }
+            };
+        } else {
+            const currentYear = new Date().getFullYear();
+            dateFilter = {
+                startDate: { $gte: new Date(currentYear, 0, 1) },
+                endDate: { $lte: new Date(currentYear, 11, 31) }
+            };
+        }
+
+        const subscriptions = await Subscription.find({
+            ...dateFilter,
+            plan: { $in: await Plan.find({ planType: 'doctor-plan' }).distinct('_id') }
+        })
+        .populate('clinisist', 'name email') // Populate clinician details
+        .populate('plan')
+        .sort({ startDate: -1 });
+
+        res.status(200).json({
+            status: 'success',
+            body: subscriptions,
+            count: subscriptions.length,
+            message: 'Doctor plan subscriptions retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching doctor plan subscriptions:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching doctor plan subscriptions',
+        });
+    }
+};
+
+const getDoctorPlanSubscriptionsMonthWise = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = {};
+        let year;
+
+        if (startDate && endDate) {
+            dateFilter = {
+                startDate: { $gte: new Date(startDate) },
+                endDate: { $lte: new Date(endDate) }
+            };
+            year = new Date(startDate).getFullYear();
+        } else {
+            year = new Date().getFullYear();
+            dateFilter = {
+                startDate: { $gte: new Date(year, 0, 1) },
+                endDate: { $lte: new Date(year, 11, 31) }
+            };
+        }
+
+        const subscriptions = await Subscription.aggregate([
+            {
+                $match: {
+                    ...dateFilter,
+                    clinisist: { $ne: null },
+                    organization: null
+                }
+            },
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'plan',
+                    foreignField: '_id',
+                    as: 'planDetails'
+                }
+            },
+            {
+                $unwind: '$planDetails'
+            },
+            {
+                $match: {
+                    'planDetails.planType': 'doctor-plan'
+                }
+            },
+            {
+                $group: {
+                    _id: { $month: "$startDate" },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            }
+        ]);
+
+        const monthlyData = {};
+        for (let i = 1; i <= 12; i++) {
+            const monthStr = i.toString().padStart(2, '0');
+            monthlyData[`${year}-${monthStr}`] = 0;
+        }
+
+        subscriptions.forEach(sub => {
+            const monthStr = sub._id.toString().padStart(2, '0');
+            monthlyData[`${year}-${monthStr}`] = sub.count;
+        });
+
+        const totalCount = Object.values(monthlyData).reduce((a, b) => a + b, 0);
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                monthlyData,
+                totalCount
+            },
+            message: 'Doctor plan subscription counts retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching doctor plan subscription counts:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching doctor plan subscription counts',
+        });
+    }
+};
+
+const getAllSubscriptions = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = {};
+
+        if (startDate && endDate) {
+            dateFilter = {
+                startDate: { $gte: new Date(startDate) },
+                endDate: { $lte: new Date(endDate) }
+            };
+        } else {
+            const currentYear = new Date().getFullYear();
+            dateFilter = {
+                startDate: { $gte: new Date(currentYear, 0, 1) },
+                endDate: { $lte: new Date(currentYear, 11, 31) }
+            };
+        }
+
+        const subscriptions = await Subscription.find(dateFilter)
+            .populate('patient', 'userName email')
+            .populate('clinisist', 'name email')
+            .populate('plan')
+            .sort({ startDate: -1 });
+
+        res.status(200).json({
+            status: 'success',
+            body: subscriptions,
+            count: subscriptions.length,
+            message: 'All subscriptions retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching all subscriptions:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching all subscriptions',
+        });
+    }
+};
+
+const getAllSubscriptionsMonthWise = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = {};
+        let year;
+
+        if (startDate && endDate) {
+            dateFilter = {
+                startDate: { $gte: new Date(startDate) },
+                endDate: { $lte: new Date(endDate) }
+            };
+            year = new Date(startDate).getFullYear();
+        } else {
+            year = new Date().getFullYear();
+            dateFilter = {
+                startDate: { $gte: new Date(year, 0, 1) },
+                endDate: { $lte: new Date(year, 11, 31) }
+            };
+        }
+
+        const subscriptions = await Subscription.aggregate([
+            {
+                $match: dateFilter
+            },
+            {
+                $group: {
+                    _id: { $month: "$startDate" },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            }
+        ]);
+
+        const monthlyData = {};
+        for (let i = 1; i <= 12; i++) {
+            const monthStr = i.toString().padStart(2, '0');
+            monthlyData[`${year}-${monthStr}`] = 0;
+        }
+
+        subscriptions.forEach(sub => {
+            const monthStr = sub._id.toString().padStart(2, '0');
+            monthlyData[`${year}-${monthStr}`] = sub.count;
+        });
+
+        const totalCount = Object.values(monthlyData).reduce((a, b) => a + b, 0);
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                monthlyData,
+                totalCount
+            },
+            message: 'All subscription counts retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching all subscription counts:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching all subscription counts',
+        });
+    }
+};
+
+const getPortalSubscriptionsMonthWise = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = {};
+        let year;
+
+        if (startDate && endDate) {
+            dateFilter = {
+                startDate: { $gte: new Date(startDate) },
+                endDate: { $lte: new Date(endDate) }
+            };
+            year = new Date(startDate).getFullYear();
+        } else {
+            year = new Date().getFullYear();
+            dateFilter = {
+                startDate: { $gte: new Date(year, 0, 1) },
+                endDate: { $lte: new Date(year, 11, 31) }
+            };
+        }
+
+        const subscriptions = await Subscription.aggregate([
+            {
+                $match: {
+                    ...dateFilter,
+                    organization: null
+                }
+            },
+            {
+                $group: {
+                    _id: { $month: "$startDate" },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            }
+        ]);
+
+        const monthlyData = {};
+        for (let i = 1; i <= 12; i++) {
+            const monthStr = i.toString().padStart(2, '0');
+            monthlyData[`${year}-${monthStr}`] = 0;
+        }
+
+        subscriptions.forEach(sub => {
+            const monthStr = sub._id.toString().padStart(2, '0');
+            monthlyData[`${year}-${monthStr}`] = sub.count;
+        });
+
+        const totalCount = Object.values(monthlyData).reduce((a, b) => a + b, 0);
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                monthlyData,
+                totalCount
+            },
+            message: 'Portal subscription counts retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching portal subscription counts:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching portal subscription counts',
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -915,5 +1218,10 @@ module.exports = {
     deletePortalClinician,
     getPortalClinicianCounts,
     getPortalPlanPatientAssessments,
-    getAllAssessmentInfos
+    getAllAssessmentInfos,
+    getDoctorPlanSubscriptions,
+    getDoctorPlanSubscriptionsMonthWise,
+    getAllSubscriptions,
+    getAllSubscriptionsMonthWise,
+    getPortalSubscriptionsMonthWise
 };

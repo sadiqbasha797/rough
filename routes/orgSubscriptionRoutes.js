@@ -7,7 +7,8 @@ const {
     getOrgSubscription,
     updateOrgSubscription,
     deleteOrgSubscription,
-    manualCheckExpiredSubscriptions
+    manualCheckExpiredSubscriptions,
+    getSubscriptionCounts
 } = require('../controllers/orgSubscription');
 
 router.post('/create', adminAuth, createOrgSubscription);
@@ -16,4 +17,5 @@ router.get('/get/:id', adminAuth, getOrgSubscription);
 router.put('/update/:id', adminAuth, updateOrgSubscription);
 router.delete('/delete/:id', adminAuth, deleteOrgSubscription);
 router.get('/checkExpired', adminAuth, manualCheckExpiredSubscriptions);
+router.get('/subscriptionCounts', getSubscriptionCounts);
 module.exports = router;    
