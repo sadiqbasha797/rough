@@ -6,15 +6,20 @@ const {
     getClinicianSubscription,
     updateClinicianSubscription,
     deleteClinicianSubscription,
-    manualCheckExpiredSubscriptions     
+    manualCheckExpiredSubscriptions,
+    checkAndUpdateExpiredSubscriptions,
+    getClinicianSubscriptionCounts,
+    getMonthlyClinicianSubscriptionStats
    } = require('../controllers/clinicianSubscriptionController');
 
 router.post('/create', createClinicianSubscription);
 router.get('/getAll', getAllClinicianSubscriptions);
 router.get('/get/:id', getClinicianSubscription);
-router.put('update/:id', updateClinicianSubscription);
-router.delete('delete/:id', deleteClinicianSubscription);
-router.post('check-expired', manualCheckExpiredSubscriptions);
-
+router.put('/update/:id', updateClinicianSubscription);
+router.delete('/delete/:id', deleteClinicianSubscription);
+router.post('/check-expired', manualCheckExpiredSubscriptions);
+router.post('/check-and-update-expired', checkAndUpdateExpiredSubscriptions);
+router.get('/counts', getClinicianSubscriptionCounts);
+router.get('/monthly-stats', getMonthlyClinicianSubscriptionStats);
 module.exports = router;
 

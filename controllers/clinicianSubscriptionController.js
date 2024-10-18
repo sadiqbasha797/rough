@@ -249,21 +249,17 @@ const manualCheckExpiredSubscriptions = async (req, res) => {
 
 const getClinicianSubscriptionCounts = async (req, res) => {
     try {
-        const clinicianId = req.params.clinicianId;
         const currentDate = new Date();
         
         const validSubscriptions = await ClinicianSubscription.countDocuments({
-            clinician: clinicianId,
             endDate: { $gt: currentDate }
         });
         
         const renewalSubscriptions = await ClinicianSubscription.countDocuments({
-            clinician: clinicianId,
             renewal: true
         });
         
         const endedSubscriptions = await ClinicianSubscription.countDocuments({
-            clinician: clinicianId,
             endDate: { $lte: currentDate }
         });
         
@@ -288,16 +284,12 @@ const getClinicianSubscriptionCounts = async (req, res) => {
 
 const getMonthlyClinicianSubscriptionStats = async (req, res) => {
     try {
-        const clinicianId = req.params.clinicianId;
-        const { startDate, endDate } = req.query;
+        let { startDate, endDate } = req.query;
 
-        // Validate date range
+        // If no dates are provided, default to this year's data
         if (!startDate || !endDate) {
-            return res.status(400).json({
-                status: 'error',
-                body: null,
-                message: 'Please provide both startDate and endDate'
-            });
+            startDate = moment().startOf('year').format('YYYY-MM-DD');
+            endDate = moment().endOf('year').format('YYYY-MM-DD');
         }
 
         const start = moment(startDate).startOf('month');
@@ -312,7 +304,6 @@ const getMonthlyClinicianSubscriptionStats = async (req, res) => {
         }
 
         const subscriptions = await ClinicianSubscription.find({
-            clinician: clinicianId,
             startDate: { $lte: end.toDate() },
             endDate: { $gte: start.toDate() }
         });
@@ -329,15 +320,16 @@ const getMonthlyClinicianSubscriptionStats = async (req, res) => {
             start.add(1, 'month');
         }
 
+        const currentDate = new Date();
+
         subscriptions.forEach(sub => {
             const subStartMonth = moment(sub.startDate).format('YYYY-MM');
             const subEndMonth = moment(sub.endDate).format('YYYY-MM');
-            const currentMonth = moment().format('YYYY-MM');
 
             if (monthlyStats[subStartMonth]) {
                 if (sub.renewal) {
                     monthlyStats[subStartMonth].renewal++;
-                } else if (subEndMonth >= currentMonth) {
+                } else if (sub.endDate > currentDate) {
                     monthlyStats[subStartMonth].valid++;
                 } else {
                     monthlyStats[subStartMonth].ended++;

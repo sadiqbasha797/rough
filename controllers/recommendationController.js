@@ -516,6 +516,38 @@ const getPortalRecommendationsForPatient = async (req, res) => {
     }
 };
 
+// Fetch portal recommendations based on recommendedTo
+const getPortalRecommendationsByRecommendedTo = async (req, res) => {
+    try {
+        const recommendedTo = req.params.recommendedTo;
+
+        const portalRecommendations = await Recommendation.find({ 
+            recommendedTo,
+            type: 'portal'
+        }).populate('recommendedBy', 'name');
+
+        if (portalRecommendations.length === 0) {
+            return res.json({
+                status: "success",
+                body: [],
+                message: "No portal recommendations found for this recipient"
+            });
+        }
+
+        res.json({
+            status: "success",
+            body: portalRecommendations,
+            message: "Portal recommendations retrieved successfully"
+        });
+    } catch (error) {
+        console.error('Error retrieving portal recommendations:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while retrieving portal recommendations"
+        });
+    }
+};
 
 module.exports = {
     deleteMedia,
@@ -528,5 +560,6 @@ module.exports = {
     getDoctorRecommendations,
     getPortalRecommendations,
     getRecommendationsForSubscribedPatient,
-    getPortalRecommendationsForPatient
+    getPortalRecommendationsForPatient,
+    getPortalRecommendationsByRecommendedTo
 };

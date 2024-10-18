@@ -8,7 +8,8 @@ const Plan = require('../models/plan');
 const Subscription = require('../models/subscription');
 const moment = require('moment');
 const mongoose = require('mongoose');
-
+const AssessmentInfo = require('../models/assessmentInfo');
+const Organization = require('../models/organization');
 const updateAdminName = async(req, res) => {
     const {newName} = req.body;
 
@@ -767,6 +768,130 @@ const getPortalClinicianCounts = async (req, res) => {
     }
 };
 
+const getPortalPlanPatientAssessments = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = {};
+
+        if (startDate && endDate) {
+            dateFilter = {
+                startDate: { $lte: new Date(endDate) },
+                endDate: { $gte: new Date(startDate) }
+            };
+        } else {
+            const currentYear = new Date().getFullYear();
+            dateFilter = {
+                startDate: { $lte: new Date(currentYear, 11, 31) },
+                endDate: { $gte: new Date(currentYear, 0, 1) }
+            };
+        }
+
+        // Get portal plan IDs
+        const portalPlanIds = await Plan.find({ planType: 'portal-plan' }).distinct('_id');
+
+        // Get subscribed patients
+        const subscriptions = await Subscription.find({
+            ...dateFilter,
+            plan: { $in: portalPlanIds }
+        }).distinct('patient');
+
+        // Get assessment info for subscribed patients
+        const assessments = await AssessmentInfo.find({
+            patientId: { $in: subscriptions }
+        }).populate('patientId', 'userName email');
+
+        // Group assessments by patient
+        const groupedAssessments = assessments.reduce((acc, assessment) => {
+            const patientId = assessment.patientId._id.toString();
+            if (!acc[patientId]) {
+                acc[patientId] = {
+                    patient: {
+                        id: patientId,
+                        userName: assessment.patientId.userName,
+                        email: assessment.patientId.email
+                    },
+                    assessments: []
+                };
+            }
+            acc[patientId].assessments.push({
+                id: assessment._id,
+                mood: assessment.mood,
+                moodLevel: assessment.moodLevel,
+                createdAt: assessment.createdAt
+            });
+            return acc;
+        }, {});
+
+        const result = Object.values(groupedAssessments);
+
+        res.status(200).json({
+            status: 'success',
+            body: result,
+            count: result.length,
+            message: 'Portal plan patient assessments retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching portal plan patient assessments:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'An error occurred while fetching portal plan patient assessments',
+            error: error.message
+        });
+    }
+};
+
+const getAllAssessmentInfos = async (req, res) => {
+    try {
+        const { startDate, endDate, page = 1, limit = 10 } = req.query;
+        let dateFilter = {};
+
+        if (startDate && endDate) {
+            dateFilter = {
+                createdAt: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                }
+            };
+        }
+
+        const totalCount = await AssessmentInfo.countDocuments(dateFilter);
+        const totalPages = Math.ceil(totalCount / limit);
+
+        const assessments = await AssessmentInfo.find(dateFilter)
+            .populate('patientId')  // Populate the entire patient document
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
+
+        const formattedAssessments = assessments.map(assessment => ({
+            assessment: {
+                id: assessment._id,
+                mood: assessment.mood,
+                moodLevel: assessment.moodLevel,
+                createdAt: assessment.createdAt,
+                updatedAt: assessment.updatedAt,
+                // Include any other fields from the AssessmentInfo model
+            },
+            patient: assessment.patientId  // This now includes the entire patient document
+        }));
+
+        res.status(200).json({
+            status: 'success',
+            body: formattedAssessments,
+            message: 'All assessment information retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching all assessment information:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'An error occurred while fetching all assessment information',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -788,5 +913,7 @@ module.exports = {
     getPortalClinicians,
     updatePortalClinician,
     deletePortalClinician,
-    getPortalClinicianCounts
+    getPortalClinicianCounts,
+    getPortalPlanPatientAssessments,
+    getAllAssessmentInfos
 };

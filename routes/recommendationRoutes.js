@@ -14,7 +14,8 @@ const {
     createDoctorRecommendation,
     getRecommendationsForSubscribedPatient,
     getPortalRecommendationsForPatient,
-    deleteMedia
+    deleteMedia,
+    getPortalRecommendationsByRecommendedTo
 } = require('../controllers/recommendationController');
 
 // Routes
@@ -29,4 +30,5 @@ router.get('/portal_recommendations',patientProtect, getPortalRecommendations);
 router.delete('/recommendations/:recommendationId/media/:mediaType/:mediaId', deleteMedia);
 router.get('/recommendations-for-subscribed-patient', clincistProtect, getRecommendationsForSubscribedPatient);
 router.get('/portal-recommendations-for-patient', getPortalRecommendationsForPatient);
+router.get('/recommended-to/:recommendedTo', getPortalRecommendationsByRecommendedTo);
 module.exports = router;
