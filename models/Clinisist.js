@@ -101,7 +101,7 @@ const ClinisistSchema = new mongoose.Schema({
   },
   Active: {
     type: String,
-    default: 'yes'
+    default: 'no'
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

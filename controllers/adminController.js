@@ -392,8 +392,8 @@ const getPortalPlanSubscriptions = async (req, res) => {
             ...dateFilter,
             plan: { $in: await Plan.find({ planType: 'portal-plan' }).distinct('_id') }
         })
-        .populate('patient', 'name email') // Populate patient details
-        .populate('plan', 'name price validity')
+        .populate('patient') // Populate patient details
+        .populate('plan')
         .sort({ startDate: -1 });
 
         res.status(200).json({
@@ -753,8 +753,8 @@ const getPortalClinicianCounts = async (req, res) => {
             status: 'success',
             body: {
                 total: totalCount,
-                active: activeCount,
-                inactive: inactiveCount
+                activeCount: activeCount,
+                inactiveCount: inactiveCount
             },
             message: 'Portal clinician counts retrieved successfully',
         });
