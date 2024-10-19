@@ -7,7 +7,8 @@ const Organization = require('../models/organization');
 const Clinisist = require('../models/Clinisist');
 const Subscription = require('../models/subscription');
 const Notification = require('../models/Notification');
-    
+const Patient = require('../models/patient');
+
 const registerManager = async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -729,6 +730,77 @@ const getNotifications = async (req, res) => {
     }
 };
 
+
+const getSubscribedPatientsOfClinicians = async (req, res) => {
+    try {
+        const managerId = req.manager._id;
+
+        // Find clinicians created by this manager
+        const clinicians = await Clinisist.find({ createdBy: managerId });
+
+        // Get subscriptions for these clinicians
+        const subscriptions = await Subscription.find({
+            clinisist: { $in: clinicians.map(c => c._id) }
+        }).populate('patient');
+
+        // Extract unique patients from subscriptions
+        const patients = [...new Map(subscriptions.map(s => [s.patient._id, s.patient])).values()];
+
+        res.json({
+            success: true,
+            body: patients,
+            message: "Subscribed patients retrieved successfully"
+        });
+    } catch (error) {
+        console.error('Error fetching subscribed patients:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+const getManagerAndOrganizationInfo = async (req, res) => {
+    try {
+        const managerId = req.manager._id;
+
+        // Fetch manager information
+        const manager = await Manager.findById(managerId).select('-password');
+
+        if (!manager) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Manager not found'
+            });
+        }
+
+        // Fetch organization information
+        const organization = await Organization.findById(manager.organization);
+
+        if (!organization) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Organization not found'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                manager: manager.toObject(),
+                organization: organization.toObject()
+            },
+            message: 'Manager and organization information retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching manager and organization info:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching manager and organization information: ' + error.message
+        });
+    }
+};
+
 module.exports = {
     registerManager,
     loginManager,
@@ -746,5 +818,7 @@ module.exports = {
     getSubscriptionCountsByManager,
     getSubscriptionBudgetByManager,
     getManagerEarnings,
-    getNotifications
+    getNotifications,
+    getSubscribedPatientsOfClinicians,
+    getManagerAndOrganizationInfo
 };

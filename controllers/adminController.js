@@ -1195,6 +1195,76 @@ const getPortalSubscriptionsMonthWise = async (req, res) => {
     }
 };
 
+const getDoctorPlanSubscriptionsWithDetails = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let dateFilter = {};
+
+        if (startDate && endDate) {
+            dateFilter = {
+                startDate: { $gte: new Date(startDate) },
+                endDate: { $lte: new Date(endDate) }
+            };
+        } else {
+            const currentYear = new Date().getFullYear();
+            dateFilter = {
+                startDate: { $gte: new Date(currentYear, 0, 1) },
+                endDate: { $lte: new Date(currentYear, 11, 31) }
+            };
+        }
+
+        // Find doctor plan subscriptions
+        const subscriptions = await Subscription.find({
+            ...dateFilter,
+            plan: { $in: await Plan.find({ planType: 'doctor-plan' }).distinct('_id') }
+        })
+        .populate('plan')
+        .populate('clinisist', 'name email specializedIn')
+        .populate('patient', 'userName email mobile')
+        .sort({ startDate: -1 });
+
+        // Format the response
+        const formattedSubscriptions = subscriptions.map(subscription => ({
+            subscriptionId: subscription._id,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            plan: {
+                id: subscription.plan._id,
+                name: subscription.plan.name,
+                price: subscription.plan.price,
+                validity: subscription.plan.validity,
+                details: subscription.plan.details
+            },
+            clinician: subscription.clinisist ? {
+                id: subscription.clinisist._id,
+                name: subscription.clinisist.name,
+                email: subscription.clinisist.email,
+                specializedIn: subscription.clinisist.specializedIn
+            } : null,
+            patient: subscription.patient ? {
+                id: subscription.patient._id,
+                userName: subscription.patient.userName,
+                email: subscription.patient.email,
+                mobile: subscription.patient.mobile
+            } : null
+        }));
+
+        res.status(200).json({
+            status: 'success',
+            body: formattedSubscriptions,
+            count: formattedSubscriptions.length,
+            message: 'Doctor plan subscriptions with details retrieved successfully',
+        });
+    } catch (error) {
+        console.error('Error fetching doctor plan subscriptions with details:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching doctor plan subscriptions with details',
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -1223,5 +1293,6 @@ module.exports = {
     getDoctorPlanSubscriptionsMonthWise,
     getAllSubscriptions,
     getAllSubscriptionsMonthWise,
-    getPortalSubscriptionsMonthWise
+    getPortalSubscriptionsMonthWise,
+    getDoctorPlanSubscriptionsWithDetails,
 };
