@@ -18,11 +18,19 @@ const updateDoctorImage = async (req, res) => {
     try {
         const clinisist = await Clinisist.findById(clinisistId);
         if (!clinisist) {
-            return res.status(404).json({ message: 'Clinisist not found' });
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: 'Clinisist not found'
+            });
         }
 
         if (!req.file) {
-            return res.status(400).json({ message: 'No image file uploaded' });
+            return res.status(400).json({
+                status: "error",
+                body: null,
+                message: 'No image file uploaded'
+            });
         }
 
         // Generate a unique key (filename) for the S3 bucket
@@ -42,12 +50,17 @@ const updateDoctorImage = async (req, res) => {
         await clinisist.save();
 
         res.status(200).json({
-            message: 'Image updated successfully',
-            imageUrl: clinisist.image
+            status: "success",
+            body: { imageUrl: clinisist.image },
+            message: 'Image updated successfully'
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: error.message
+        });
     }
 };
 
@@ -56,7 +69,11 @@ const getClinisistProfile = async (req, res) => {
         // Ensure we are working with a plain JavaScript object
         const clinisistData = req.clinisist.toObject ? req.clinisist.toObject() : req.clinisist;
 
-        res.json(clinisistData);
+        res.json({
+            status: "success",
+            body: clinisistData,
+            message: "Clinisist profile retrieved successfully"
+        });
     } catch (error) {
         res.status(500).json({
             status: "error",
@@ -77,13 +94,25 @@ const updatePassword = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             clinisist.paswd = await bcrypt.hash(newPassword, salt);
             await clinisist.save();
-            res.json({ message: "Password changed successfully" });
+            res.json({
+                status: "success",
+                body: null,
+                message: "Password changed successfully"
+            });
         } else {
-            res.status(401).json({ message: "Old password not correct" });
+            res.status(401).json({
+                status: "error",
+                body: null,
+                message: "Old password not correct"
+            });
         }
     } catch (err) {
         console.log(err);
-        res.status(500).json({ message: err.message });
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: err.message
+        });
     }
 };
 
@@ -97,13 +126,25 @@ const updateUserName = async (req, res) => {
         if (clinisist) {
             clinisist.name = newUserName;
             await clinisist.save();
-            res.json({ message: "User name updated successfully" });
+            res.json({
+                status: "success",
+                body: null,
+                message: "User name updated successfully"
+            });
         } else {
-            res.status(404).json({ message: "Clinisist not found" });
+            res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Clinisist not found"
+            });
         }
     } catch (err) {
         console.log(err);
-        res.status(500).json({ message: err.message });
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: err.message
+        });
     }
 };
 
@@ -116,17 +157,31 @@ const deleteClinisist = async (req, res) => {
             const plans = await Plan.find({ status: 'Active', createdBy: req.clinisist._id });
             if (plans) {
                 return res.status(403).json({
-                    message: "Can't delete your account while you have Active Plans",
+                    status: "error",
+                    body: null,
+                    message: "Can't delete your account while you have Active Plans"
                 });
             }
             await Clinisist.deleteOne({ _id: req.clinisist._id });
-            res.json({ message: "Clinisist deleted successfully" });
+            res.json({
+                status: "success",
+                body: null,
+                message: "Clinisist deleted successfully"
+            });
         } else {
-            res.status(404).json({ message: "Clinisist not found" });
+            res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Clinisist not found"
+            });
         }
     } catch (err) {
         console.log(err);
-        res.status(500).json({ message: err.message });
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: err.message
+        });
     }
 };
 
@@ -151,10 +206,18 @@ const getNotifications = async (req, res) => {
             return notification;
         }));
 
-        res.status(200).json(notifications);
+        res.status(200).json({
+            status: "success",
+            body: notifications,
+            message: "Notifications fetched successfully"
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: error.message
+        });
     }
 };
 
@@ -170,7 +233,11 @@ const updateDoctor = async (req, res) => {
         const clinisist = await Clinisist.findById(req.clinisist._id);
 
         if (!clinisist) {
-            return res.status(404).json({ status: "error", message: "Clinisist not found" });
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Clinisist not found"
+            });
         }
 
         // Update the fields
@@ -199,15 +266,15 @@ const updateDoctor = async (req, res) => {
 
         res.status(200).json({
             status: "success",
-            message: "Profile updated successfully",
-            body: clinisist
+            body: clinisist,
+            message: "Profile updated successfully"
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({
             status: "error",
-            message: "An error occurred while updating the profile",
-            error: error.message
+            body: null,
+            message: "An error occurred while updating the profile"
         });
     }
 };
@@ -244,15 +311,15 @@ const getSubscribedPatients = async (req, res) => {
 
         res.status(200).json({
             status: "success",
-            message: "Subscribed patients fetched successfully",
-            body: subscribedPatients
+            body: subscribedPatients,
+            message: "Subscribed patients fetched successfully"
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({
             status: "error",
-            message: "An error occurred while fetching subscribed patients",
-            error: error.message
+            body: null,
+            message: "An error occurred while fetching subscribed patients"
         });
     }
 };
@@ -312,15 +379,15 @@ const getSubscribedPatientsAssessments = async (req, res) => {
 
         res.status(200).json({
             status: "success",
-            message: "Subscribed patients' assessments fetched successfully",
-            body: subscribedPatientsWithAssessments
+            body: subscribedPatientsWithAssessments,
+            message: "Subscribed patients' assessments fetched successfully"
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({
             status: "error",
-            message: "An error occurred while fetching subscribed patients' assessments",
-            error: error.message
+            body: null,
+            message: "An error occurred while fetching subscribed patients' assessments"
         });
     }
 };

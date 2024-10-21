@@ -6,10 +6,8 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto'); // To generate a token
 const createNotification = require('../utils/createNotification');
 
-
-
 const registerPatient = async (req, res) => {
-    const { userName, email, password, dateOfBirth, address, mobile, guardian,location } = req.body;
+    const { userName, email, password, dateOfBirth, address, mobile, guardian, location } = req.body;
     const dob = new Date(dateOfBirth);
 
     try {
@@ -25,7 +23,6 @@ const registerPatient = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Generate a verification token
         const verificationToken = crypto.randomBytes(20).toString('hex');
         const tokenExpiration = Date.now() + 3600000; // 1 hour before the token expires
 
@@ -45,13 +42,13 @@ const registerPatient = async (req, res) => {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'khanbasha7777777@gmail.com',
-                pass: 'jith pqxs yghn llnc'
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
             }
         });
 
         const mailOptions = {
-            from: 'khanbasha7777777@gmail.com',
+            from: process.env.EMAIL_USER,
             to: email,
             subject: 'Verify Your Email',
             html: `<h4>Hello, ${userName}</h4>
@@ -62,7 +59,6 @@ const registerPatient = async (req, res) => {
         transporter.sendMail(mailOptions, async function(error, info) {
             if (error) {
                 console.log(error);
-                // Send response for email sending error
                 return res.status(500).json({
                     status: 'error',
                     body: null,
@@ -71,11 +67,9 @@ const registerPatient = async (req, res) => {
             } else {
                 console.log('Email sent: ' + info.response);
 
-                // After sending the email, check if the user is verified and send a welcome notification
                 const message = 'Welcome to our platform! We are excited to have you.';
                 await createNotification(patient._id, 'Patient', message, null, null, 'message');
                 
-                // Send response for successful registration and email sending with patient details
                 return res.status(201).json({
                     status: 'success',
                     body: {
@@ -101,29 +95,40 @@ const registerPatient = async (req, res) => {
     }
 };
 
-
 const verifyEmail = async (req, res) => {
-    const { token } = req.params; // Assuming the token is passed as a URL parameter
+    const { token } = req.params;
 
     try {
         const patient = await Patient.findOne({
             verificationToken: token,
-            tokenExpiration: { $gt: Date.now() } // Checks that the token hasn't expired
+            tokenExpiration: { $gt: Date.now() }
         });
 
         if (!patient) {
-            return res.status(404).json({ message: 'Verification token is invalid or has expired.' });
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Verification token is invalid or has expired.'
+            });
         }
 
         patient.verified = 'yes';
-        patient.verificationToken = undefined; // Clear the verification token
-        patient.tokenExpiration = undefined; // Clear the token expiration
+        patient.verificationToken = undefined;
+        patient.tokenExpiration = undefined;
 
         await patient.save();
-        res.status(200).json({ message: 'Your account has been successfully verified.' });
+        res.status(200).json({
+            status: 'success',
+            body: null,
+            message: 'Your account has been successfully verified.'
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: error.message
+        });
     }
 };
 
@@ -185,8 +190,6 @@ const authPatient = async (req, res) => {
     }
 };
 
-
-
 const registerClinisist = async (req, res) => {
     const { 
         name, email, mobileNum, dob, password, specializedIn, address, services, about,
@@ -242,7 +245,6 @@ const registerClinisist = async (req, res) => {
                         name: clinisist.name,
                         email: clinisist.email,
                         specializedIn: clinisist.specializedIn,
-                        // Add other fields as needed
                     },
                     token: generateToken(clinisist._id),
                 },
@@ -265,7 +267,6 @@ const registerClinisist = async (req, res) => {
     }
 };
 
-
 const authClinisist = async (req, res) => {
     const { email, password } = req.body;
 
@@ -274,21 +275,31 @@ const authClinisist = async (req, res) => {
 
         if (clinisist && (await bcrypt.compare(password, clinisist.password))) {
             res.json({
-                clinisist: clinisist,
-                token: generateToken(clinisist._id),
+                status: 'success',
+                body: {
+                    clinisist: clinisist,
+                    token: generateToken(clinisist._id),
+                },
+                message: 'Authentication successful.'
             });
         } else if (clinisist) {
             res.status(401).json({
+                status: 'error',
+                body: null,
                 message: "Invalid Password",
             });
         } else {
             res.status(401).json({
+                status: 'error',
+                body: null,
                 message: "Invalid emailId",
             });
         }
     } catch (error) {
         console.log(error);
         res.status(500).json({
+            status: 'error',
+            body: null,
             message: error.message,
         });
     }
@@ -310,20 +321,20 @@ const sendPasswordResetEmail = async (req, res) => {
         const tokenExpiration = Date.now() + 3600000; // 1 hour before the token expires
 
         patient.resetPasswordToken = resetToken;
-        patient.resetPasswordExpires = tokenExpiration; // Save the expiration time
+        patient.resetPasswordExpires = tokenExpiration;
         await patient.save();
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'khanbasha7777777@gmail.com',
-                pass: 'jith pqxs yghn llnc'
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
             }
         });
 
         const resetUrl = `http://localhost:3000/api/auth/reset/${resetToken}`;
         const mailOptions = {
-            from: 'khanbasha7777777@gmail.com',
+            from: process.env.EMAIL_USER,
             to: email,
             subject: 'Password Reset Request',
             html: `Please click on the following link to reset your password: <a href="${resetUrl}">${resetUrl}</a>`
@@ -355,7 +366,6 @@ const sendPasswordResetEmail = async (req, res) => {
     }
 };
 
-
 const resetPassword = async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
@@ -382,7 +392,6 @@ const resetPassword = async (req, res) => {
         patient.resetPasswordExpires = undefined;
         await patient.save();
 
-        // Create a notification for the patient
         const message = 'Your password has been successfully updated.';
         await createNotification(patient._id, 'Patient', message, null, null, 'alert');
 
@@ -401,4 +410,4 @@ const resetPassword = async (req, res) => {
     }
 };
 
-module.exports = {registerPatient, authPatient,registerClinisist, authClinisist, verifyEmail,resetPassword,sendPasswordResetEmail};
+module.exports = {registerPatient, authPatient, registerClinisist, authClinisist, verifyEmail, resetPassword, sendPasswordResetEmail};
