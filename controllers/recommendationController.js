@@ -28,7 +28,7 @@ const createRecommendation = (req, res) => {
         }
 
         const { category, recommendation, type, recommendedTo } = req.body;
-        const recommendedBy = req.clinisist._id; // Assuming the clinisist ID is available in the request
+        const recommendedBy = req.admin._id; // Assuming the clinisist ID is available in the request
         const relatedMedia = {
             images: [],
             documents: [],
@@ -323,40 +323,38 @@ const getPortalRecommendations = async (req, res) => {
 const createDoctorRecommendation = (req, res) => {
     upload(req, res, async (err) => {
         if (err instanceof multer.MulterError) {
-            // A Multer error occurred when uploading.
             return res.status(400).json({ status: 'error', body: null, message: `Multer upload error: ${err.message}` });
         } else if (err) {
-            // An unknown error occurred when uploading.
             return res.status(500).json({ status: 'error', body: null, message: `Unknown upload error: ${err.message}` });
         }
 
-        const { category, recommendation, type, recommendedTo } = req.body;
-        const recommendedBy = req.clinisist._id; // Assuming clinician's ID is stored in req.clinisist._id
+        const { category, recommendation, recommendedTo } = req.body;
+        const recommendedBy = req.clinisist._id;
         const relatedMedia = {
             images: [],
             documents: [],
             videos: []
         };
 
-        // Process uploaded files and store URLs and public_ids in relatedMedia
-        if (req.files) {
-            ['images', 'documents', 'videos'].forEach(mediaType => {
-                if (req.files[mediaType]) {
-                    req.files[mediaType].forEach(file => {
-                        relatedMedia[mediaType].push({ url: file.path, public_id: file.filename });
-                    });
-                }
-            });
-        }
-
         try {
+            // Process uploaded files
+            for (const mediaType of ['images', 'documents', 'videos']) {
+                if (req.files[mediaType]) {
+                    for (const file of req.files[mediaType]) {
+                        const key = `${mediaType}/${uuidv4()}_${file.originalname}`;
+                        const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                        relatedMedia[mediaType].push({ url, public_id: key });
+                    }
+                }
+            }
+
             const newRecommendation = new Recommendation({
                 category,
                 recommendation,
                 relatedMedia,
                 recommendedBy,
-                recommendedTo, // Include this field
-                type: 'doctor' // Set the type to 'doctor' for clinician recommendations
+                recommendedTo,
+                type: 'doctor'
             });
             await newRecommendation.save();
 
@@ -374,14 +372,14 @@ const createDoctorRecommendation = (req, res) => {
             res.status(201).json({
                 status: 'success',
                 body: newRecommendation,
-                message: 'Recommendation created successfully'
+                message: 'Doctor recommendation created successfully'
             });
         } catch (error) {
-            console.error('Error creating recommendation:', error);
+            console.error('Error creating doctor recommendation:', error);
             res.status(500).json({
                 status: 'error',
                 body: null,
-                message: 'Error creating recommendation'
+                message: 'Error creating doctor recommendation'
             });
         }
     });

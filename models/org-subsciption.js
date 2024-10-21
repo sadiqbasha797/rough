@@ -24,7 +24,7 @@ const orgSubscriptionSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    valididty: {
+    validity: {
         type: Number,
         required: true,
         min: 0

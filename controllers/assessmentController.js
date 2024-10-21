@@ -103,7 +103,7 @@ const updateAssessment = async (req, res) => {
 // Fetch assessment by ID
 const getAssessmentById = async (req, res) => {
     try {
-        const assessment = await Assessment.findById(req.params.id);
+        const assessment = await Assessment.findById(req.params.id).populate('category');
         if (!assessment) {
             return res.status(404).json({
                 status: 'error',
@@ -163,7 +163,7 @@ const deleteAssessment = async (req, res) => {
 // Get all assessments
 const getAllAssessments = async (req, res) => {
     try {
-        const assessments = await Assessment.find({});
+        const assessments = await Assessment.find({}).populate('category');
         res.json({
             status: 'success',
             body: assessments,
