@@ -449,7 +449,7 @@ const deleteMedia = async (req, res) => {
 const getRecommendationsForSubscribedPatient = async (req, res) => {
     try {
         const clinicianId = req.clinisist._id; // Assuming clinician's ID is stored in req.clinisist._id
-        const patientId = req.body.patientId; // Taking patient ID from the request body
+        const patientId = req.params.patientId; // Taking patient ID from the route parameters
 
         // Fetch recommendations for the specific patient recommended by the clinician
         const recommendations = await Recommendation.find({
@@ -483,7 +483,7 @@ const getRecommendationsForSubscribedPatient = async (req, res) => {
 // Fetch portal recommendations for a patient
 const getPortalRecommendationsForPatient = async (req, res) => {
     try {
-        const patientId = req.body.patientId; // Taking patient ID from the request body
+        const patientId = req.params.patientId; // Taking patient ID from the request body
 
         // Fetch portal recommendations for the specific patient
         const portalRecommendations = await Recommendation.find({
