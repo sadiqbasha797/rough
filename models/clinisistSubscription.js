@@ -8,7 +8,7 @@
         },
         patients: {
             type: Number,
-            required: true,
+            required: false,
             min: 0
         },
         price: {

@@ -11,8 +11,8 @@ const {
     getClinicianSubscriptionCounts,
     getMonthlyClinicianSubscriptionStats
    } = require('../controllers/clinicianSubscriptionController');
-
-router.post('/create', createClinicianSubscription);
+const { clincistProtect } = require('../middleware/auth'); // Middleware to protect routes
+router.post('/create/:id', clincistProtect, createClinicianSubscription);
 router.get('/getAll', getAllClinicianSubscriptions);
 router.get('/get/:id', getClinicianSubscription);
 router.put('/update/:id', updateClinicianSubscription);

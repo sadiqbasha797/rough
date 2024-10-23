@@ -10,6 +10,8 @@ const moment = require('moment');
 const mongoose = require('mongoose');
 const AssessmentInfo = require('../models/assessmentInfo');
 const Organization = require('../models/organization');
+const OrganizationSubscription = require('../models/org-subsciption');
+const ClinicianSubscription = require('../models/clinisistSubscription');
 const updateAdminName = async(req, res) => {
     const {newName} = req.body;
 
@@ -1219,41 +1221,30 @@ const getDoctorPlanSubscriptionsWithDetails = async (req, res) => {
             plan: { $in: await Plan.find({ planType: 'doctor-plan' }).distinct('_id') }
         })
         .populate('plan')
-        .populate('clinisist', 'name email specializedIn')
-        .populate('patient', 'userName email mobile')
+        .populate('clinisist')
+        .populate('patient')
         .sort({ startDate: -1 });
 
         // Format the response
         const formattedSubscriptions = subscriptions.map(subscription => ({
-            subscriptionId: subscription._id,
-            startDate: subscription.startDate,
-            endDate: subscription.endDate,
-            plan: {
-                id: subscription.plan._id,
-                name: subscription.plan.name,
-                price: subscription.plan.price,
-                validity: subscription.plan.validity,
-                details: subscription.plan.details
+            subscription: {
+                _id: subscription._id,
+                startDate: subscription.startDate,
+                endDate: subscription.endDate,
+                createdAt: subscription.createdAt,
+                updatedAt: subscription.updatedAt,
+                // Include any other fields from the Subscription model
             },
-            clinician: subscription.clinisist ? {
-                id: subscription.clinisist._id,
-                name: subscription.clinisist.name,
-                email: subscription.clinisist.email,
-                specializedIn: subscription.clinisist.specializedIn
-            } : null,
-            patient: subscription.patient ? {
-                id: subscription.patient._id,
-                userName: subscription.patient.userName,
-                email: subscription.patient.email,
-                mobile: subscription.patient.mobile
-            } : null
+            plan: subscription.plan,
+            clinician: subscription.clinisist,
+            patient: subscription.patient
         }));
 
         res.status(200).json({
             status: 'success',
             body: formattedSubscriptions,
             count: formattedSubscriptions.length,
-            message: 'Doctor plan subscriptions with details retrieved successfully',
+            message: 'Doctor plan subscriptions with full details retrieved successfully',
         });
     } catch (error) {
         console.error('Error fetching doctor plan subscriptions with details:', error);
@@ -1264,6 +1255,204 @@ const getDoctorPlanSubscriptionsWithDetails = async (req, res) => {
         });
     }
 };
+// Calculate total earnings for patient, clinician, and organization subscriptions
+const calculateTotalEarnings = async (req, res) => {
+    try {
+        // Calculate patient earnings (portal-plan + doctor-plan)
+        const patientEarnings = await Subscription.aggregate([
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'plan',
+                    foreignField: '_id',
+                    as: 'planDetails'
+                }
+            },
+            {
+                $unwind: '$planDetails'
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalEarnings: { $sum: '$planDetails.price' }
+                }
+            }
+        ]);
+
+        // Calculate clinician subscription earnings
+        const clinicianEarnings = await ClinicianSubscription.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalEarnings: { $sum: '$price' }
+                }
+            }
+        ]);
+
+        // Calculate organization subscription earnings
+        const organizationEarnings = await OrganizationSubscription.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalEarnings: { $sum: '$price' }
+                }
+            }
+        ]);
+
+        const patientTotal = patientEarnings.length > 0 ? patientEarnings[0].totalEarnings : 0;
+        const clinicianTotal = clinicianEarnings.length > 0 ? clinicianEarnings[0].totalEarnings : 0;
+        const organizationTotal = organizationEarnings.length > 0 ? organizationEarnings[0].totalEarnings : 0;
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                patientEarnings: patientTotal,
+                clinicianEarnings: clinicianTotal,
+                organizationEarnings: organizationTotal,
+                totalEarnings: patientTotal + clinicianTotal + organizationTotal
+            },
+            message: 'Total earnings calculated successfully for patient, clinician, and organization subscriptions'
+        });
+    } catch (error) {
+        console.error('Error calculating total earnings:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while calculating total earnings'
+        });
+    }
+};
+
+const getSubscriptionCountsMonthWise = async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
+
+        // If no dates are provided, default to the current year
+        if (!startDate || !endDate) {
+            const currentYear = new Date().getFullYear();
+            startDate = `${currentYear}-01-01`;
+            endDate = `${currentYear}-12-31`;
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Aggregate for patient subscriptions (formerly portal-plan and doctor-plan subscriptions)
+        const patientSubscriptionCounts = await Subscription.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: start, $lte: end }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$createdAt' },
+                        month: { $month: '$createdAt' }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        // Aggregate for organization subscriptions
+        const organizationSubscriptionCounts = await OrganizationSubscription.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: start, $lte: end }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$createdAt' },
+                        month: { $month: '$createdAt' }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        // Aggregate for clinician subscriptions
+        const clinicianSubscriptionCounts = await ClinicianSubscription.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: start, $lte: end }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$createdAt' },
+                        month: { $month: '$createdAt' }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        const formattedResults = {};
+
+        // Initialize all months with zero counts
+        for (let year = start.getFullYear(); year <= end.getFullYear(); year++) {
+            const startMonth = year === start.getFullYear() ? start.getMonth() + 1 : 1;
+            const endMonth = year === end.getFullYear() ? end.getMonth() + 1 : 12;
+
+            for (let month = startMonth; month <= endMonth; month++) {
+                const date = `${year}-${month.toString().padStart(2, '0')}`;
+                formattedResults[date] = {
+                    patientSubscriptionCount: 0,
+                    organizationSubscriptionCount: 0,
+                    clinicianSubscriptionCount: 0
+                };
+            }
+        }
+
+        // Populate the results
+        patientSubscriptionCounts.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            formattedResults[date].patientSubscriptionCount = item.count;
+        });
+
+        organizationSubscriptionCounts.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            formattedResults[date].organizationSubscriptionCount = item.count;
+        });
+
+        clinicianSubscriptionCounts.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            formattedResults[date].clinicianSubscriptionCount = item.count;
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: formattedResults,
+            message: 'Subscription counts fetched successfully',
+            period: {
+                startDate: start.toISOString().split('T')[0],
+                endDate: end.toISOString().split('T')[0]
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching subscription counts:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching subscription counts'
+        });
+    }
+};
+
+
 
 module.exports = {
     registerAdmin,
@@ -1295,4 +1484,7 @@ module.exports = {
     getAllSubscriptionsMonthWise,
     getPortalSubscriptionsMonthWise,
     getDoctorPlanSubscriptionsWithDetails,
+    calculateTotalEarnings,
+    getSubscriptionCountsMonthWise
 };
+

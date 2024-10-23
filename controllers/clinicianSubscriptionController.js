@@ -1,5 +1,6 @@
 const ClinicianSubscription = require('../models/clinisistSubscription');
 const Clinisist = require('../models/Clinisist');
+const ClinicistPlan = require('../models/clinisistPlan');
 const createNotification = require('../utils/createNotification');
 const sendEmail = require('../utils/mailUtil');
 const moment = require('moment');
@@ -7,8 +8,8 @@ const moment = require('moment');
 // Create a new clinician subscription or renew existing one
 const createClinicianSubscription = async (req, res) => {
     try {
-        const { clinicianId, patients, price, validity } = req.body;
-
+        const clinicianId = req.clinisist.id;
+        const planId = req.params.id;
         const clinician = await Clinisist.findById(clinicianId);
         if (!clinician) {
             return res.status(404).json({
@@ -18,28 +19,35 @@ const createClinicianSubscription = async (req, res) => {
             });
         }
 
+        const plan = await ClinicistPlan.findById(planId);
+        if (!plan) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Clinicist plan not found'
+            });
+        }
+
         const startDate = new Date();
-        const endDate = new Date(startDate.getTime() + validity * 24 * 60 * 60 * 1000);
+        const endDate = new Date(startDate.getTime() + plan.validity * 24 * 60 * 60 * 1000);
 
         let subscription = await ClinicianSubscription.findOne({ clinician: clinicianId });
         let isRenewal = false;
 
         if (subscription) {
-            subscription.patients = patients;
-            subscription.price = price;
+            subscription.price = plan.price;
             subscription.startDate = startDate;
             subscription.endDate = endDate;
-            subscription.validity = validity;
+            subscription.validity = plan.validity;
             subscription.renewal = true;
             isRenewal = true;
         } else {
             subscription = new ClinicianSubscription({
                 clinician: clinicianId,
-                patients,
-                price,
+                price: plan.price,
                 startDate,
                 endDate,
-                validity,
+                validity: plan.validity,
                 renewal: false
             });
         }
@@ -48,8 +56,8 @@ const createClinicianSubscription = async (req, res) => {
         await Clinisist.findByIdAndUpdate(clinicianId, { Active: 'yes' });
 
         const notificationMessage = isRenewal
-            ? `Subscription renewed for ${patients} patients.`
-            : `New subscription created for ${patients} patients.`;
+            ? `Subscription renewed for plan: ${plan.planName}.`
+            : `New subscription created for plan: ${plan.planName}.`;
         await createNotification(
             clinicianId,
             'Clinisist',
@@ -60,7 +68,7 @@ const createClinicianSubscription = async (req, res) => {
         );
 
         const emailSubject = isRenewal ? 'Subscription Renewal Confirmation' : 'New Subscription Confirmation';
-        const emailBody = `Dear ${clinician.name},\n\n${isRenewal ? 'Your subscription has been renewed' : 'Your new subscription has been created'} successfully.\n\nDetails:\nPatients: ${patients}\nStart Date: ${startDate}\nEnd Date: ${endDate}\nValidity: ${validity} days\nTotal Price: $${price}\n\nYour account is now active.\n\nThank you for your subscription!\n\nBest regards,\nYour Company Name`;
+        const emailBody = `Dear ${clinician.name},\n\n${isRenewal ? 'Your subscription has been renewed' : 'Your new subscription has been created'} successfully.\n\nDetails:\nPlan: ${plan.planName}\nStart Date: ${startDate}\nEnd Date: ${endDate}\nValidity: ${plan.validity} days\nTotal Price: $${plan.price}\n\nYour account is now active.\n\nThank you for your subscription!\n\nBest regards,\nYour Company Name`;
 
         await sendEmail(clinician.email, emailSubject, emailBody);
 
