@@ -1452,7 +1452,218 @@ const getSubscriptionCountsMonthWise = async (req, res) => {
     }
 };
 
+const getDetailedSubscriptionCountsMonthWise = async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
 
+        // If no dates are provided, default to the current year
+        if (!startDate || !endDate) {
+            const currentYear = new Date().getFullYear();
+            startDate = `${currentYear}-01-01`;
+            endDate = `${currentYear}-12-31`;
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Aggregate for patient subscriptions (portal-plan and doctor-plan)
+        const patientSubscriptionCounts = await Subscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$startDate' },
+                        month: { $month: '$startDate' }
+                    },
+                    active: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $lte: ['$startDate', '$$NOW'] },
+                                    { $gte: ['$endDate', '$$NOW'] }
+                                ]},
+                                1, 0
+                            ]
+                        }
+                    },
+                    renewal: {
+                        $sum: { $cond: ['$renewal', 1, 0] }
+                    },
+                    ended: {
+                        $sum: {
+                            $cond: [
+                                { $lt: ['$endDate', '$$NOW'] },
+                                1, 0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        // Aggregate for clinician subscriptions
+        const clinicianSubscriptionCounts = await ClinicianSubscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$startDate' },
+                        month: { $month: '$startDate' }
+                    },
+                    active: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $lte: ['$startDate', '$$NOW'] },
+                                    { $gte: ['$endDate', '$$NOW'] }
+                                ]},
+                                1, 0
+                            ]
+                        }
+                    },
+                    renewal: {
+                        $sum: { $cond: ['$renewal', 1, 0] }
+                    },
+                    ended: {
+                        $sum: {
+                            $cond: [
+                                { $lt: ['$endDate', '$$NOW'] },
+                                1, 0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        // Aggregate for organization subscriptions
+        const organizationSubscriptionCounts = await OrganizationSubscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$startDate' },
+                        month: { $month: '$startDate' }
+                    },
+                    active: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $lte: ['$startDate', '$$NOW'] },
+                                    { $gte: ['$endDate', '$$NOW'] }
+                                ]},
+                                1, 0
+                            ]
+                        }
+                    },
+                    renewal: {
+                        $sum: { $cond: ['$renewal', 1, 0] }
+                    },
+                    ended: {
+                        $sum: {
+                            $cond: [
+                                { $lt: ['$endDate', '$$NOW'] },
+                                1, 0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        const formattedResults = {};
+
+        // Initialize all months with zero counts
+        for (let year = start.getFullYear(); year <= end.getFullYear(); year++) {
+            const startMonth = year === start.getFullYear() ? start.getMonth() + 1 : 1;
+            const endMonth = year === end.getFullYear() ? end.getMonth() + 1 : 12;
+
+            for (let month = startMonth; month <= endMonth; month++) {
+                const date = `${year}-${month.toString().padStart(2, '0')}`;
+                formattedResults[date] = {
+                    patientSubscription: { active: 0, renewal: 0, ended: 0 },
+                    clinicianSubscription: { active: 0, renewal: 0, ended: 0 },
+                    organizationSubscription: { active: 0, renewal: 0, ended: 0 }
+                };
+            }
+        }
+
+        // Populate the results
+        patientSubscriptionCounts.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            if (formattedResults[date]) {
+                formattedResults[date].patientSubscription = {
+                    active: item.active,
+                    renewal: item.renewal,
+                    ended: item.ended
+                };
+            }
+        });
+
+        clinicianSubscriptionCounts.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            if (formattedResults[date]) {
+                formattedResults[date].clinicianSubscription = {
+                    active: item.active,
+                    renewal: item.renewal,
+                    ended: item.ended
+                };
+            }
+        });
+
+        organizationSubscriptionCounts.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            if (formattedResults[date]) {
+                formattedResults[date].organizationSubscription = {
+                    active: item.active,
+                    renewal: item.renewal,
+                    ended: item.ended
+                };
+            }
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: formattedResults,
+            message: 'Detailed subscription counts fetched successfully',
+            period: {
+                startDate: start.toISOString().split('T')[0],
+                endDate: end.toISOString().split('T')[0]
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching detailed subscription counts:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching detailed subscription counts'
+        });
+    }
+};
 
 module.exports = {
     registerAdmin,
@@ -1485,6 +1696,7 @@ module.exports = {
     getPortalSubscriptionsMonthWise,
     getDoctorPlanSubscriptionsWithDetails,
     calculateTotalEarnings,
-    getSubscriptionCountsMonthWise
+    getSubscriptionCountsMonthWise,
+    getDetailedSubscriptionCountsMonthWise
 };
 

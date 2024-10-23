@@ -32,7 +32,8 @@ const {
     getPortalSubscriptionsMonthWise,
     getDoctorPlanSubscriptionsWithDetails,
     calculateTotalEarnings,
-    getSubscriptionCountsMonthWise
+    getSubscriptionCountsMonthWise,
+    getDetailedSubscriptionCountsMonthWise
  } = require('../controllers/adminController');
 const {createPortalPlan, createPlan} = require('../controllers/planController');
 require('../config/passport');
@@ -81,4 +82,5 @@ router.get('/portal-subscriptions-month-wise', adminAuth, getPortalSubscriptions
 router.get('/doctor-plan-subscriptions-with-details', adminAuth, getDoctorPlanSubscriptionsWithDetails);
 router.get('/total-earnings', adminAuth, calculateTotalEarnings);
 router.get('/subscription-counts-month-wise', adminAuth, getSubscriptionCountsMonthWise);
+router.get('/detailed-subscription-counts-month-wise', adminAuth, getDetailedSubscriptionCountsMonthWise);
 module.exports = router;
