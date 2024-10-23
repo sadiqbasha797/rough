@@ -1471,7 +1471,8 @@ const getDetailedSubscriptionCountsMonthWise = async (req, res) => {
             {
                 $match: {
                     startDate: { $lte: end },
-                    endDate: { $gte: start }
+                    endDate: { $gte: start },
+                    organization: null  // Only count subscriptions where organization is null
                 }
             },
             {
@@ -1665,6 +1666,158 @@ const getDetailedSubscriptionCountsMonthWise = async (req, res) => {
     }
 };
 
+const getTotalSubscriptionCounts = async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
+
+        // If no dates are provided, default to all-time data
+        const start = startDate ? new Date(startDate) : new Date(0); // 0 represents the earliest date
+        const end = endDate ? new Date(endDate) : new Date();
+
+        // Aggregate for patient subscriptions (portal-plan and doctor-plan)
+        const patientSubscriptionCounts = await Subscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start },
+                    organization: null  // Only count subscriptions where organization is null
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    active: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $lte: ['$startDate', '$$NOW'] },
+                                    { $gte: ['$endDate', '$$NOW'] }
+                                ]},
+                                1, 0
+                            ]
+                        }
+                    },
+                    renewal: {
+                        $sum: { $cond: ['$renewal', 1, 0] }
+                    },
+                    ended: {
+                        $sum: {
+                            $cond: [
+                                { $lt: ['$endDate', '$$NOW'] },
+                                1, 0
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        // Aggregate for clinician subscriptions
+        const clinicianSubscriptionCounts = await ClinicianSubscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    active: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $lte: ['$startDate', '$$NOW'] },
+                                    { $gte: ['$endDate', '$$NOW'] }
+                                ]},
+                                1, 0
+                            ]
+                        }
+                    },
+                    renewal: {
+                        $sum: { $cond: ['$renewal', 1, 0] }
+                    },
+                    ended: {
+                        $sum: {
+                            $cond: [
+                                { $lt: ['$endDate', '$$NOW'] },
+                                1, 0
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        // Aggregate for organization subscriptions
+        const organizationSubscriptionCounts = await OrganizationSubscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    active: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $lte: ['$startDate', '$$NOW'] },
+                                    { $gte: ['$endDate', '$$NOW'] }
+                                ]},
+                                1, 0
+                            ]
+                        }
+                    },
+                    renewal: {
+                        $sum: { $cond: ['$renewal', 1, 0] }
+                    },
+                    ended: {
+                        $sum: {
+                            $cond: [
+                                { $lt: ['$endDate', '$$NOW'] },
+                                1, 0
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        const results = {
+            patientSubscription: patientSubscriptionCounts[0] || { active: 0, renewal: 0, ended: 0 },
+            clinicianSubscription: clinicianSubscriptionCounts[0] || { active: 0, renewal: 0, ended: 0 },
+            organizationSubscription: organizationSubscriptionCounts[0] || { active: 0, renewal: 0, ended: 0 }
+        };
+
+        // Remove the _id field from each result
+        Object.values(results).forEach(result => {
+            if (result._id !== undefined) {
+                delete result._id;
+            }
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: results,
+            message: 'Total subscription counts fetched successfully',
+            period: {
+                startDate: start.toISOString().split('T')[0],
+                endDate: end.toISOString().split('T')[0]
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching total subscription counts:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching total subscription counts'
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -1697,6 +1850,7 @@ module.exports = {
     getDoctorPlanSubscriptionsWithDetails,
     calculateTotalEarnings,
     getSubscriptionCountsMonthWise,
-    getDetailedSubscriptionCountsMonthWise
+    getDetailedSubscriptionCountsMonthWise,
+    getTotalSubscriptionCounts
 };
 
