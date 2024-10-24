@@ -1818,6 +1818,160 @@ const getTotalSubscriptionCounts = async (req, res) => {
     }
 };
 
+const getDetailedEarningsMonthWise = async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
+
+        // If no dates are provided, default to the current year
+        if (!startDate || !endDate) {
+            const currentYear = new Date().getFullYear();
+            startDate = `${currentYear}-01-01`;
+            endDate = `${currentYear}-12-31`;
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Aggregate for patient subscriptions (portal-plan and doctor-plan)
+        const patientEarnings = await Subscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start },
+                    organization: null  // Only count subscriptions where organization is null
+                }
+            },
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'plan',
+                    foreignField: '_id',
+                    as: 'planDetails'
+                }
+            },
+            {
+                $unwind: '$planDetails'
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$startDate' },
+                        month: { $month: '$startDate' }
+                    },
+                    earnings: { $sum: '$planDetails.price' }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        // Aggregate for clinician subscriptions
+        const clinicianEarnings = await ClinicianSubscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$startDate' },
+                        month: { $month: '$startDate' }
+                    },
+                    earnings: { $sum: '$price' }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        // Aggregate for organization subscriptions
+        const organizationEarnings = await OrganizationSubscription.aggregate([
+            {
+                $match: {
+                    startDate: { $lte: end },
+                    endDate: { $gte: start }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$startDate' },
+                        month: { $month: '$startDate' }
+                    },
+                    earnings: { $sum: '$price' }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1 }
+            }
+        ]);
+
+        const formattedResults = {};
+
+        // Initialize all months with zero earnings
+        for (let year = start.getFullYear(); year <= end.getFullYear(); year++) {
+            const startMonth = year === start.getFullYear() ? start.getMonth() + 1 : 1;
+            const endMonth = year === end.getFullYear() ? end.getMonth() + 1 : 12;
+
+            for (let month = startMonth; month <= endMonth; month++) {
+                const date = `${year}-${month.toString().padStart(2, '0')}`;
+                formattedResults[date] = {
+                    patientEarnings: 0,
+                    clinicianEarnings: 0,
+                    organizationEarnings: 0,
+                    totalEarnings: 0
+                };
+            }
+        }
+
+        // Populate the results
+        patientEarnings.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            if (formattedResults[date]) {
+                formattedResults[date].patientEarnings = item.earnings;
+                formattedResults[date].totalEarnings += item.earnings;
+            }
+        });
+
+        clinicianEarnings.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            if (formattedResults[date]) {
+                formattedResults[date].clinicianEarnings = item.earnings;
+                formattedResults[date].totalEarnings += item.earnings;
+            }
+        });
+
+        organizationEarnings.forEach(item => {
+            const date = `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`;
+            if (formattedResults[date]) {
+                formattedResults[date].organizationEarnings = item.earnings;
+                formattedResults[date].totalEarnings += item.earnings;
+            }
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: formattedResults,
+            message: 'Detailed earnings fetched successfully',
+            period: {
+                startDate: start.toISOString().split('T')[0],
+                endDate: end.toISOString().split('T')[0]
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching detailed earnings:', error);
+        res.status(500).json({
+            status: 'error',
+            error: error.message,
+            message: 'An error occurred while fetching detailed earnings'
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -1851,6 +2005,7 @@ module.exports = {
     calculateTotalEarnings,
     getSubscriptionCountsMonthWise,
     getDetailedSubscriptionCountsMonthWise,
-    getTotalSubscriptionCounts
+    getTotalSubscriptionCounts,
+    getDetailedEarningsMonthWise
 };
 

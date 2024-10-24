@@ -32,6 +32,14 @@
         renewal: {
             type: Boolean,
             default: false
+        },
+        description: {
+            type: String,
+            required: false
+        },
+        active: {
+            type: Boolean,
+            default: true
         }
     }, {
         timestamps: true

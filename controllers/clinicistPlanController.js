@@ -3,13 +3,15 @@ const ClinicistPlan = require('../models/clinisistPlan');
 // Create a new clinicist plan
 const createClinicistPlan = async (req, res) => {
     try {
-        const { planName, price, startDate, endDate, validity } = req.body;
+        const { planName, price, startDate, endDate, validity, description, active } = req.body;
         const newPlan = new ClinicistPlan({
             planName,
             price,
             startDate,
             endDate,
-            validity
+            validity,
+            description,
+            active
         });
         
         const savedPlan = await newPlan.save();
@@ -69,10 +71,10 @@ const getClinicistPlanById = async (req, res) => {
 // Update a clinicist plan
 const updateClinicistPlan = async (req, res) => {
     try {
-        const { planName, price, startDate, endDate, validity } = req.body;
+        const { planName, price, startDate, endDate, validity, description, active } = req.body;
         const updatedPlan = await ClinicistPlan.findByIdAndUpdate(
             req.params.id,
-            { planName, price, startDate, endDate, validity },
+            { planName, price, startDate, endDate, validity, description, active },
             { new: true, runValidators: true }
         );
         
@@ -119,10 +121,28 @@ const deleteClinicistPlan = async (req, res) => {
     }
 };
 
+// Get all active clinicist plans
+const getActiveClinicistPlans = async (req, res) => {
+    try {
+        const activePlans = await ClinicistPlan.find({ active: true });
+        res.status(200).json({
+            status: 'success',
+            body: activePlans,
+            message: 'Active clinicist plans retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     createClinicistPlan,
     getAllClinicistPlans,
     getClinicistPlanById,
     updateClinicistPlan,
-    deleteClinicistPlan
+    deleteClinicistPlan,
+    getActiveClinicistPlans
 };

@@ -5,11 +5,13 @@ const {
     getAllClinicistPlans,
     getClinicistPlanById,
     updateClinicistPlan,
-    deleteClinicistPlan
+    deleteClinicistPlan,
+    getActiveClinicistPlans
 } = require('../controllers/clinicistPlanController');
 
 router.post('/', createClinicistPlan);
 router.get('/', getAllClinicistPlans);
+router.get('/active', getActiveClinicistPlans);  // New route for active plans
 router.get('/:id', getClinicistPlanById);
 router.put('/:id', updateClinicistPlan);
 router.delete('/:id', deleteClinicistPlan);
