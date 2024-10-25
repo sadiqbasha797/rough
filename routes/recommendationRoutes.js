@@ -28,7 +28,7 @@ router.delete('/recommendations/:id', adminAuth, deleteRecommendation);
 router.get('/doctor_recommendations',patientProtect, getDoctorRecommendations);
 router.get('/portal_recommendations',patientProtect, getPortalRecommendations);
 router.delete('/recommendations/:recommendationId/media/:mediaType/:mediaId', deleteMedia);
-router.get('/recommendations-for-subscribed-patient/:id', clincistProtect, getRecommendationsForSubscribedPatient);
+router.get('/recommendations-for-subscribed-patient/:patientId', clincistProtect, getRecommendationsForSubscribedPatient);
 router.get('/portal-recommendations-for-patient/:id', getPortalRecommendationsForPatient);
 router.get('/recommended-to/:recommendedTo', getPortalRecommendationsByRecommendedTo);
 module.exports = router;

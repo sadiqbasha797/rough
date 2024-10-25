@@ -392,6 +392,38 @@ const getSubscribedPatientsAssessments = async (req, res) => {
     }
 };
 
+const getAssessmentInfoByPatientId = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        console.log('Searching for assessments with Patient ID:', patientId);
+
+        const assessmentInfos = await AssessmentInfo.find({ patientId }).sort({ createdAt: -1 });
+        console.log('Assessment infos found:', assessmentInfos);
+
+        if (!assessmentInfos || assessmentInfos.length === 0) {
+            console.log('No assessment info found for Patient ID:', patientId);
+            return res.status(404).json({
+                status: 'error',
+                message: 'No assessment information found for this patient'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            data: assessmentInfos,
+            message: 'Assessment information retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching assessment information:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'An error occurred while fetching assessment information',
+            error: error.message
+        });
+    }
+};
+
+
 module.exports = {
     getClinisistProfile,
     updatePassword,
@@ -402,5 +434,6 @@ module.exports = {
     upload,
     updateDoctor,
     getSubscribedPatients,
-    getSubscribedPatientsAssessments
+    getSubscribedPatientsAssessments,
+    getAssessmentInfoByPatientId
 };

@@ -10,6 +10,7 @@ const {
     getNotifications,
     getSubscribedPatients,
     getSubscribedPatientsAssessments,
+    getAssessmentInfoByPatientId
 } = require('../controllers/clinisistController'); // Adjust the path as needed
 const { clincistProtect } = require('../middleware/auth'); // Middleware to protect routes
 const { createPlan, updatePlan, getPlansByClincist, deletePlan } = require('../controllers/planController');
@@ -29,4 +30,5 @@ router.route('/update-dp/:id').put(clincistProtect, upload.single('image'), upda
 router.put('/update-doctor', clincistProtect, updateDoctor);
 router.route('/subscribed-patients').get(clincistProtect, getSubscribedPatients);
 router.route('/subscribed-patients-assessments').get(clincistProtect, getSubscribedPatientsAssessments);
+router.route('/subscribed-patient-assessment-infos/:patientId').get(clincistProtect, getAssessmentInfoByPatientId);
 module.exports = router;
