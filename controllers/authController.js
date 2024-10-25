@@ -410,4 +410,12 @@ const resetPassword = async (req, res) => {
     }
 };
 
-module.exports = {registerPatient, authPatient, registerClinisist, authClinisist, verifyEmail, resetPassword, sendPasswordResetEmail};
+module.exports = {
+    registerPatient, 
+    authPatient, 
+    registerClinisist, 
+    authClinisist, 
+    verifyEmail, 
+    resetPassword, 
+    sendPasswordResetEmail
+};

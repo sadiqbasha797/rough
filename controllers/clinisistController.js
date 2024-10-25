@@ -12,6 +12,7 @@ const Subscription = require('../models/subscription');
 const AssessmentInfo = require('../models/assessmentInfo');
 const mongoose = require('mongoose');
 const Recommendation = require('../models/Recommendation'); // Make sure to import your Recommendation model
+const calculateDistance = require('../utils/calculateDistance');
 
 // Update Doctor's Image using S3
 const updateDoctorImage = async (req, res) => {
@@ -703,6 +704,99 @@ const getClinicistRecommendationStats = async (req, res) => {
         });
     }
 };
+
+const getNearbySubscribedPatientsAssessments = async (req, res) => {
+    try {
+        const clinisistId = req.clinisist._id;
+        const { maxDistance = 50 } = req.query; // Default max distance is 50 km
+
+        // Get clinicist's location
+        const clinicist = await Clinisist.findById(clinisistId);
+        if (!clinicist.address || !clinicist.address.latitude || !clinicist.address.longitude) {
+            return res.status(400).json({
+                status: "error",
+                message: "Clinicist location is not set"
+            });
+        }
+
+        // Find all active subscriptions for this clinicist
+        const subscriptions = await Subscription.find({
+            clinisist: clinisistId,
+            endDate: { $gte: new Date() }
+        }).populate('plan');
+
+        // Extract patient IDs from subscriptions
+        const patientIds = subscriptions.map(sub => sub.patient);
+
+        // Fetch patients and their latest assessment info
+        const patientsWithAssessments = await Patient.aggregate([
+            { $match: { _id: { $in: patientIds } } },
+            {
+                $lookup: {
+                    from: 'assessmentinfos',
+                    let: { patientId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$patientId', '$$patientId'] } } },
+                        { $sort: { createdAt: -1 } },
+                        { $limit: 1 }
+                    ],
+                    as: 'latestAssessment'
+                }
+            },
+            { $unwind: { path: '$latestAssessment', preserveNullAndEmptyArrays: true } }
+        ]);
+
+        // Filter nearby patients and combine with subscription and assessment details
+        const nearbyPatientsWithAssessments = patientsWithAssessments
+            .filter(patient => {
+                if (!patient.address || !patient.address.latitude || !patient.address.longitude) {
+                    return false;
+                }
+                const distance = calculateDistance(
+                    clinicist.address.latitude,
+                    clinicist.address.longitude,
+                    patient.address.latitude,
+                    patient.address.longitude
+                );
+                return distance <= maxDistance;
+            })
+            .map(patient => {
+                const subscription = subscriptions.find(sub => sub.patient.equals(patient._id));
+                return {
+                    patient: {
+                        _id: patient._id,
+                        userName: patient.userName,
+                        email: patient.email,
+                        dateOfBirth: patient.dateOfBirth,
+                        mobile: patient.mobile,
+                        address: patient.address,
+                        // Add other patient fields as needed
+                    },
+                    subscription: {
+                        planName: subscription.plan.name,
+                        startDate: subscription.startDate,
+                        endDate: subscription.endDate,
+                        renewal: subscription.renewal
+                    },
+                    latestAssessment: patient.latestAssessment || null
+                };
+            });
+
+        res.status(200).json({
+            status: "success",
+            body: nearbyPatientsWithAssessments,
+            message: "Nearby subscribed patients' assessments fetched successfully"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while fetching nearby subscribed patients' assessments"
+        });
+    }
+};
+
 module.exports = {
     getClinisistProfile,
     updatePassword,
@@ -717,5 +811,6 @@ module.exports = {
     getAssessmentInfoByPatientId,
     getClinicistSubscriptionStats,
     getClinicistSalesStats,
-    getClinicistRecommendationStats
+    getClinicistRecommendationStats,
+    getNearbySubscribedPatientsAssessments
 };

@@ -6,11 +6,25 @@ const careerPathSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  duration: {
-    type: String,
+  startDate: {
+    type: Date,
+    required: true,
+  },
+  endDate: {
+    type: Date,
     required: true,
   },
   description: {
+    type: String,
+    required: false,
+    default: null
+  },
+  specialty: {
+    type: String,
+    required: false,
+    default: null
+  },
+  organizationName: {
     type: String,
     required: false,
     default: null
@@ -105,7 +119,7 @@ const ClinisistSchema = new mongoose.Schema({
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true
+    required: false
   },
   degree: {
     type: String,

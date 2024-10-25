@@ -13,7 +13,8 @@ const {
     getAssessmentInfoByPatientId,
     getClinicistSubscriptionStats,
     getClinicistSalesStats,
-    getClinicistRecommendationStats
+    getClinicistRecommendationStats,
+    getNearbySubscribedPatientsAssessments
 } = require('../controllers/clinisistController'); // Adjust the path as needed
 const { clincistProtect } = require('../middleware/auth'); // Middleware to protect routes
 const { createPlan, updatePlan, getPlansByClincist, deletePlan } = require('../controllers/planController');
@@ -37,4 +38,5 @@ router.route('/subscribed-patient-assessment-infos/:patientId').get(clincistProt
 router.route('/subscription-stats').get(clincistProtect, getClinicistSubscriptionStats);
 router.route('/sales-stats').get(clincistProtect, getClinicistSalesStats);
 router.route('/recommendation-stats').get(clincistProtect, getClinicistRecommendationStats);
+router.route('/nearby-subscribed-patients-assessments').get(clincistProtect, getNearbySubscribedPatientsAssessments);
 module.exports = router;
