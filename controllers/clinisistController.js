@@ -10,6 +10,8 @@ const storage = multer.memoryStorage(); // Store files in memory temporarily
 const upload = multer({ storage: storage });
 const Subscription = require('../models/subscription');
 const AssessmentInfo = require('../models/assessmentInfo');
+const mongoose = require('mongoose');
+const Recommendation = require('../models/Recommendation'); // Make sure to import your Recommendation model
 
 // Update Doctor's Image using S3
 const updateDoctorImage = async (req, res) => {
@@ -423,7 +425,284 @@ const getAssessmentInfoByPatientId = async (req, res) => {
     }
 };
 
+const getClinicistSubscriptionStats = async (req, res) => {
+    try {
+        const clinisistId = req.clinisist._id;
+        const currentDate = new Date();
+        const oneMonthAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
+        const oneYearAgo = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
 
+        // Get total subscribed patients
+        const totalSubscribedPatients = await Subscription.countDocuments({
+            clinisist: clinisistId,
+            endDate: { $gte: currentDate }
+        });
+
+        // Get subscribed patients from the last month
+        const lastMonthSubscribedPatients = await Subscription.countDocuments({
+            clinisist: clinisistId,
+            startDate: { $gte: oneMonthAgo, $lte: currentDate }
+        });
+
+        // Calculate percentage change
+        const percentageChange = totalSubscribedPatients > 0 
+            ? ((lastMonthSubscribedPatients / totalSubscribedPatients) * 100).toFixed(2)
+            : 0;
+
+        // Get monthly subscription data for the past year
+        const monthlyData = await Subscription.aggregate([
+            {
+                $match: {
+                    clinisist: clinisistId,
+                    startDate: { $gte: oneYearAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: { 
+                        year: { $year: "$startDate" },
+                        month: { $month: "$startDate" }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, "_id.month": 1 }
+            }
+        ]);
+
+        // Format the monthly data
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const charData = monthlyData.map(item => ({
+            Month: `${months[item._id.month - 1]} ${item._id.year}`,
+            Number: item.count
+        }));
+
+        res.status(200).json({
+            status: "success",
+            body: {
+                Subscribed_patients: {
+                    Total_subscribed_patients: totalSubscribedPatients,
+                    Description: `From past one month ${percentageChange}%`,
+                    charData: charData
+                }
+            },
+            message: "Clinicist subscription stats fetched successfully"
+        });
+    } catch (error) {
+        console.error('Error fetching clinicist subscription stats:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while fetching clinicist subscription stats"
+        });
+    }
+};
+
+const getClinicistSalesStats = async (req, res) => {
+    try {
+        const clinisistId = req.clinisist._id;
+        const currentDate = new Date();
+        const oneMonthAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
+        const oneYearAgo = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
+
+        // Get total sales value
+        const totalSales = await Subscription.aggregate([
+            {
+                $match: {
+                    clinisist: clinisistId,
+                    startDate: { $lte: currentDate },
+                    endDate: { $gte: currentDate }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'plan',
+                    foreignField: '_id',
+                    as: 'planDetails'
+                }
+            },
+            {
+                $unwind: '$planDetails'
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalSales: { $sum: '$planDetails.price' }
+                }
+            }
+        ]);
+
+        const totalSalesValue = totalSales.length > 0 ? totalSales[0].totalSales : 0;
+
+        // Get sales from the last month
+        const lastMonthSales = await Subscription.aggregate([
+            {
+                $match: {
+                    clinisist: clinisistId,
+                    startDate: { $gte: oneMonthAgo, $lte: currentDate }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'plan',
+                    foreignField: '_id',
+                    as: 'planDetails'
+                }
+            },
+            {
+                $unwind: '$planDetails'
+            },
+            {
+                $group: {
+                    _id: null,
+                    lastMonthSales: { $sum: '$planDetails.price' }
+                }
+            }
+        ]);
+
+        const lastMonthSalesValue = lastMonthSales.length > 0 ? lastMonthSales[0].lastMonthSales : 0;
+
+        // Calculate percentage change
+        const percentageChange = totalSalesValue > 0 
+            ? ((lastMonthSalesValue / totalSalesValue) * 100).toFixed(2)
+            : 0;
+
+        // Get monthly sales data for the past year
+        const monthlySalesData = await Subscription.aggregate([
+            {
+                $match: {
+                    clinisist: clinisistId,
+                    startDate: { $gte: oneYearAgo }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'plan',
+                    foreignField: '_id',
+                    as: 'planDetails'
+                }
+            },
+            {
+                $unwind: '$planDetails'
+            },
+            {
+                $group: {
+                    _id: { 
+                        year: { $year: "$startDate" },
+                        month: { $month: "$startDate" }
+                    },
+                    sales: { $sum: '$planDetails.price' }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, "_id.month": 1 }
+            }
+        ]);
+
+        // Format the monthly data
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const charData = monthlySalesData.map(item => ({
+            Month: `${months[item._id.month - 1]} ${item._id.year}`,
+            Number: item.sales
+        }));
+
+        res.status(200).json({
+            status: "success",
+            body: {
+                Sales: {
+                    total_sales_value: totalSalesValue,
+                    Description: `From past one month ${percentageChange}%`,
+                    charData: charData
+                }
+            },
+            message: "Clinicist sales stats fetched successfully"
+        });
+    } catch (error) {
+        console.error('Error fetching clinicist sales stats:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while fetching clinicist sales stats"
+        });
+    }
+};
+
+const getClinicistRecommendationStats = async (req, res) => {
+    try {
+        const clinisistId = req.clinisist._id;
+        const currentDate = new Date();
+        const oneMonthAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
+        const oneYearAgo = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
+
+        // Get total recommendations
+        const totalRecommendations = await Recommendation.countDocuments({
+            recommendedBy: clinisistId
+        });
+
+        // Get recommendations from the last month
+        const lastMonthRecommendations = await Recommendation.countDocuments({
+            recommendedBy: clinisistId,
+            timestamp: { $gte: oneMonthAgo, $lte: currentDate }
+        });
+
+        // Calculate percentage change
+        const percentageChange = totalRecommendations > 0 
+            ? ((lastMonthRecommendations / totalRecommendations) * 100).toFixed(2)
+            : 0;
+
+        // Get monthly recommendation data for the past year
+        const monthlyData = await Recommendation.aggregate([
+            {
+                $match: {
+                    recommendedBy: clinisistId,  // Remove mongoose.Types.ObjectId
+                    timestamp: { $gte: oneYearAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: { 
+                        year: { $year: "$timestamp" },
+                        month: { $month: "$timestamp" }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, "_id.month": 1 }
+            }
+        ]);
+
+        // Format the monthly data
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const charData = monthlyData.map(item => ({
+            Month: `${months[item._id.month - 1]} ${item._id.year}`,
+            Number: item.count
+        }));
+
+        res.status(200).json({
+            status: "success",
+            body: {
+                Recommended_patients: {
+                    total_recommended_value: totalRecommendations,
+                    Description: `From past one month ${percentageChange}%`,
+                    charData: charData
+                }
+            },
+            message: "Clinicist recommendation stats fetched successfully"
+        });
+    } catch (error) {
+        console.error('Error fetching clinicist recommendation stats:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while fetching clinicist recommendation stats"
+        });
+    }
+};
 module.exports = {
     getClinisistProfile,
     updatePassword,
@@ -435,5 +714,8 @@ module.exports = {
     updateDoctor,
     getSubscribedPatients,
     getSubscribedPatientsAssessments,
-    getAssessmentInfoByPatientId
+    getAssessmentInfoByPatientId,
+    getClinicistSubscriptionStats,
+    getClinicistSalesStats,
+    getClinicistRecommendationStats
 };
