@@ -20,10 +20,8 @@ const upload = multer({
 const createRecommendation = (req, res) => {
     upload(req, res, async (err) => {
         if (err instanceof multer.MulterError) {
-            // A Multer error occurred when uploading.
             return res.status(400).json({ status: 'error', body: null, message: `Multer upload error: ${err.message}` });
         } else if (err) {
-            // An unknown error occurred when uploading.
             return res.status(500).json({ status: 'error', body: null, message: `Unknown upload error: ${err.message}` });
         }
 
@@ -37,12 +35,14 @@ const createRecommendation = (req, res) => {
 
         try {
             // Process uploaded files
-            for (const mediaType of ['images', 'documents', 'videos']) {
-                if (req.files[mediaType]) {
-                    for (const file of req.files[mediaType]) {
-                        const key = `${mediaType}/${uuidv4()}_${file.originalname}`;
-                        const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                        relatedMedia[mediaType].push({ url, public_id: key });
+            if (req.files) {
+                for (const mediaType of ['images', 'documents', 'videos']) {
+                    if (req.files[mediaType]) {
+                        for (const file of req.files[mediaType]) {
+                            const key = `${mediaType}/${uuidv4()}_${file.originalname}`;
+                            const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                            relatedMedia[mediaType].push({ url, public_id: key });
+                        }
                     }
                 }
             }

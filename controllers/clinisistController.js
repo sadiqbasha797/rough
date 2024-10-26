@@ -708,14 +708,23 @@ const getClinicistRecommendationStats = async (req, res) => {
 const getNearbySubscribedPatientsAssessments = async (req, res) => {
     try {
         const clinisistId = req.clinisist._id;
-        const { maxDistance = 50 } = req.query; // Default max distance is 50 km
+        const { maxDistance = 50, latitude, longitude } = req.body; // Changed from req.query to req.body
 
-        // Get clinicist's location
-        const clinicist = await Clinisist.findById(clinisistId);
-        if (!clinicist.address || !clinicist.address.latitude || !clinicist.address.longitude) {
+        // Validate latitude and longitude inputs
+        if (!latitude || !longitude) {
             return res.status(400).json({
                 status: "error",
-                message: "Clinicist location is not set"
+                message: "Latitude and longitude are required"
+            });
+        }
+
+        const clinisistLatitude = parseFloat(latitude);
+        const clinisistLongitude = parseFloat(longitude);
+
+        if (isNaN(clinisistLatitude) || isNaN(clinisistLongitude)) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid latitude or longitude"
             });
         }
 
@@ -753,8 +762,8 @@ const getNearbySubscribedPatientsAssessments = async (req, res) => {
                     return false;
                 }
                 const distance = calculateDistance(
-                    clinicist.address.latitude,
-                    clinicist.address.longitude,
+                    clinisistLatitude,
+                    clinisistLongitude,
                     patient.address.latitude,
                     patient.address.longitude
                 );
@@ -797,6 +806,61 @@ const getNearbySubscribedPatientsAssessments = async (req, res) => {
     }
 };
 
+const getClinicistRecommendationsAndPatients = async (req, res) => {
+    try {
+        const clinisistId = req.clinisist._id;
+
+        // Fetch all recommendations made by this clinicist
+        const recommendations = await Recommendation.find({ recommendedBy: clinisistId })
+            .populate('recommendedTo', 'userName email dateOfBirth mobile') // Populate patient details
+            .sort({ timestamp: -1 }); // Sort by most recent first
+
+        // Group recommendations by patient
+        const patientRecommendations = recommendations.reduce((acc, rec) => {
+            const patientId = rec.recommendedTo._id.toString();
+            if (!acc[patientId]) {
+                acc[patientId] = {
+                    patient: rec.recommendedTo,
+                    recommendations: []
+                };
+            }
+            acc[patientId].recommendations.push({
+                _id: rec._id,
+                category: rec.category,
+                recommendation: rec.recommendation,
+                type: rec.type,
+                timestamp: rec.timestamp
+            });
+            return acc;
+        }, {});
+
+        // Convert to array and format the response
+        const formattedResponse = Object.values(patientRecommendations).map(({ patient, recommendations }) => ({
+            patient: {
+                _id: patient._id,
+                userName: patient.userName,
+                email: patient.email,
+                dateOfBirth: patient.dateOfBirth,
+                mobile: patient.mobile
+            },
+            recommendations: recommendations
+        }));
+
+        res.status(200).json({
+            status: "success",
+            body: formattedResponse,
+            message: "Clinicist recommendations and patients fetched successfully"
+        });
+    } catch (error) {
+        console.error('Error fetching clinicist recommendations and patients:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while fetching clinicist recommendations and patients"
+        });
+    }
+};
+
 module.exports = {
     getClinisistProfile,
     updatePassword,
@@ -812,5 +876,6 @@ module.exports = {
     getClinicistSubscriptionStats,
     getClinicistSalesStats,
     getClinicistRecommendationStats,
-    getNearbySubscribedPatientsAssessments
+    getNearbySubscribedPatientsAssessments,
+    getClinicistRecommendationsAndPatients,
 };
