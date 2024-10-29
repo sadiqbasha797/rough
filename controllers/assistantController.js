@@ -71,6 +71,7 @@ const loginAssistant = async (req, res) => {
                     id: assistant._id,
                     name: assistant.name,
                     email: assistant.email,
+                    role : 'assistant',
                     token: jwt.sign({ id: assistant._id }, process.env.JWT_SECRET, {
                         expiresIn: '1d',
                     }),
