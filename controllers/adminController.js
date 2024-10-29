@@ -12,6 +12,7 @@ const AssessmentInfo = require('../models/assessmentInfo');
 const Organization = require('../models/organization');
 const OrganizationSubscription = require('../models/org-subsciption');
 const ClinicianSubscription = require('../models/clinisistSubscription');
+const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
 const updateAdminName = async(req, res) => {
     const {newName} = req.body;
 
@@ -1972,6 +1973,175 @@ const getDetailedEarningsMonthWise = async (req, res) => {
     }
 };
 
+const updateAdminInfo = async (req, res) => {
+    try {
+        const adminId = req.admin._id;
+        const {
+            name,
+            email,
+            companyName,
+            address,
+            socialMediaLinks,
+            contact,
+            founderName,
+            established,
+            bio
+        } = req.body;
+
+        const admin = await Admin.findById(adminId);
+
+        if (!admin) {
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Admin not found"
+            });
+        }
+
+        // Update fields if provided
+        if (name) admin.name = name;
+        if (email) admin.email = email;
+        if (companyName) admin.companyName = companyName;
+        if (address) admin.address = address;
+        if (socialMediaLinks) admin.socialMediaLinks = socialMediaLinks;
+        if (contact) admin.contact = contact;
+        if (founderName) admin.founderName = founderName;
+        if (established) admin.established = established;
+        if (bio) admin.bio = bio;
+
+        await admin.save();
+
+        res.status(200).json({
+            status: "success",
+            body: admin,
+            message: "Admin information updated successfully"
+        });
+    } catch (error) {
+        console.error('Error updating admin information:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while updating admin information"
+        });
+    }
+};
+
+const updateAdminMedia = async (req, res) => {
+    try {
+        const adminId = req.admin._id;
+        const admin = await Admin.findById(adminId);
+
+        if (!admin) {
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Admin not found"
+            });
+        }
+
+        // Handle profile image update
+        if (req.files && req.files.image) {
+            // Delete existing profile image if it exists
+            if (admin.image) {
+                const previousKey = admin.image.split('/').pop();
+                await deleteFile(`admin_images/${previousKey}`);
+            }
+
+            // Upload new profile image
+            const fileKey = `admin_images/${Date.now()}_${req.files.image.name}`;
+            const imageUrl = await uploadFile(
+                req.files.image.data,
+                fileKey,
+                req.files.image.mimetype
+            );
+            admin.image = imageUrl;
+        }
+
+        // Handle company image update
+        if (req.files && req.files.companyImage) {
+            // Delete existing company image if it exists
+            if (admin.companyImage) {
+                const previousKey = admin.companyImage.split('/').pop();
+                await deleteFile(`company_images/${previousKey}`);
+            }
+
+            // Upload new company image
+            const fileKey = `company_images/${Date.now()}_${req.files.companyImage.name}`;
+            const imageUrl = await uploadFile(
+                req.files.companyImage.data,
+                fileKey,
+                req.files.companyImage.mimetype
+            );
+            admin.companyImage = imageUrl;
+        }
+
+        await admin.save();
+
+        res.status(200).json({
+            status: "success",
+            body: {
+                image: admin.image,
+                companyImage: admin.companyImage
+            },
+            message: "Admin media updated successfully"
+        });
+    } catch (error) {
+        console.error('Error updating admin media:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "An error occurred while updating admin media"
+        });
+    }
+};
+
+const getAdminProfile = async (req, res) => {
+    try {
+        const adminId = req.admin._id;
+        const admin = await Admin.findById(adminId).select('-password');
+
+        if (!admin) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Admin not found'
+            });
+        }
+
+        // Format the response data
+        const profileData = {
+            id: admin._id,
+            name: admin.name,
+            email: admin.email,
+            companyName: admin.companyName || '',
+            address: admin.address || '',
+            companyImage: admin.companyImage || '',
+            socialMediaLinks: admin.socialMediaLinks || [],
+            contact: {
+                email: admin.contact?.email || '',
+                mobile: admin.contact?.mobile || ''
+            },
+            founderName: admin.founderName || '',
+            established: admin.established || '',
+            bio: admin.bio || '',
+            image: admin.image || ''
+        };
+
+        res.status(200).json({
+            status: 'success',
+            body: profileData,
+            message: 'Admin profile retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching admin profile:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'An error occurred while fetching admin profile'
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -2006,6 +2176,9 @@ module.exports = {
     getSubscriptionCountsMonthWise,
     getDetailedSubscriptionCountsMonthWise,
     getTotalSubscriptionCounts,
-    getDetailedEarningsMonthWise
+    getDetailedEarningsMonthWise,
+    updateAdminInfo,
+    updateAdminMedia,
+    getAdminProfile
 };
 

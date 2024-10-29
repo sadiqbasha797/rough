@@ -35,9 +35,13 @@ const {
     getSubscriptionCountsMonthWise,
     getDetailedSubscriptionCountsMonthWise,
     getTotalSubscriptionCounts,
-    getDetailedEarningsMonthWise
+    getDetailedEarningsMonthWise,
+    updateAdminInfo,
+    updateAdminMedia,
+    getAdminProfile
  } = require('../controllers/adminController');
 const {createPortalPlan, createPlan} = require('../controllers/planController');
+const fileUpload = require('express-fileupload');
 require('../config/passport');
 
 router.post('/register', registerAdmin);
@@ -88,4 +92,10 @@ router.get('/subscription-counts-month-wise', adminAuth, getSubscriptionCountsMo
 router.get('/detailed-subscription-counts-month-wise', adminAuth, getDetailedSubscriptionCountsMonthWise);
 router.get('/total-subscription-counts', adminAuth, getTotalSubscriptionCounts);
 router.get('/detailed-earnings-month-wise', adminAuth, getDetailedEarningsMonthWise);
+
+router.patch('/update-info', adminAuth, updateAdminInfo);
+router.patch('/update-media', adminAuth, fileUpload(), updateAdminMedia);
+
+router.get('/profile', adminAuth, getAdminProfile);
+
 module.exports = router;

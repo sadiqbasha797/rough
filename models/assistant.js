@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const adminSchema = new mongoose.Schema({
+const assistantSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -14,15 +14,11 @@ const adminSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    companyName: {
-        type: String,
-    },
+   
     address: {
         type: String,
     },
-    companyImage: {
-        type: String,
-    },
+   
     socialMediaLinks: {
         type: [String],
     },
@@ -34,20 +30,24 @@ const adminSchema = new mongoose.Schema({
             type: String,
         }
     },
-    founderName: {
-        type: String,
-    },
-    established: {
-        type: Date,
-    },
+ 
     bio: {
         type: String,
     },
     image: {
         type: String,
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    lastLogin: {
+        type: Date
     }
+}, {
+    timestamps: true
 });
 
-const Admin = mongoose.model('Admin', adminSchema);
+const Assistant = mongoose.model('Assistant', assistantSchema);
 
-module.exports = Admin;
+module.exports = Assistant;
