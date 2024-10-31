@@ -70,23 +70,83 @@ const createSubscription = async (req, res) => {
             createdSubscription = await newSubscription.save();
         }
 
-        // Notify the patient
-        const patientMessage = `You have successfully ${existingSubscription ? 'renewed' : 'subscribed to'} the plan "${plan.name}".`;
-        await createNotification(req.patient._id, 'Patient', patientMessage, null, null, 'subscription');
+        // Modified notification logic for portal-plan
+        if (plan.planType === 'portal-plan') {
+            // Create notification for the patient
+            const patientMessage = `You have successfully ${existingSubscription ? 'renewed' : 'subscribed to'} the portal plan "${plan.name}".`;
+            await createNotification(
+                req.patient._id,  // recipient
+                'Patient',        // recipientModel
+                patientMessage,
+                null,            // sender
+                null,            // senderModel
+                'subscription'
+            );
 
-        // Notify the clinician (for both doctor-plan and organization-plan)
-        if (subscriptionClinisistId) {
-            const clinician = await Clinisist.findById(subscriptionClinisistId);
-            if (clinician) {
-                const clinicianMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} ${plan.planType === 'organization-plan' ? 'an organization' : 'your'} plan "${plan.name}".`;
-                await createNotification(clinician._id, 'Clinisist', clinicianMessage, req.patient._id, 'Patient', 'subscription');
+            // Create notification for the portal (with null recipient and sender)
+            const portalMessage = `A new patient has ${existingSubscription ? 'renewed' : 'subscribed to'} the portal plan "${plan.name}".`;
+            await createNotification(
+                null,            // recipient
+                'Admin',            // recipientModel
+                portalMessage,
+                null,            // sender
+                null,            // senderModel
+                'subscription'
+            );
+        } else {
+            // Notify the patient
+            const patientMessage = `You have successfully ${existingSubscription ? 'renewed' : 'subscribed to'} the plan "${plan.name}".`;
+            await createNotification(
+                req.patient._id, 
+                'Patient', 
+                patientMessage, 
+                null, 
+                null, 
+                'subscription'
+            );
+
+            // Notify the clinician and create admin notification for doctor-plan
+            if (subscriptionClinisistId) {
+                const clinician = await Clinisist.findById(subscriptionClinisistId);
+                if (clinician) {
+                    // Notify clinician
+                    const clinicianMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} ${plan.planType === 'organization-plan' ? 'an organization' : 'your'} plan "${plan.name}".`;
+                    await createNotification(
+                        clinician._id, 
+                        'Clinisist', 
+                        clinicianMessage, 
+                        req.patient._id, 
+                        'Patient', 
+                        'subscription'
+                    );
+
+                    // Create admin notification for doctor-plan
+                    if (plan.planType === 'doctor-plan') {
+                        const adminMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} a doctor plan "${plan.name}" with Dr. ${clinician.name}.`;
+                        await createNotification(
+                            null,            // recipient
+                            'Admin',         // recipientModel
+                            adminMessage,
+                            null,            // sender
+                            null,            // senderModel
+                            'subscription'
+                        );
+                    }
+                }
             }
-        }
 
-        // Notify the organization (for organization-plan)
-        if (organizationId) {
-            const organizationMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} your organization plan "${plan.name}".`;
-            await createNotification(organizationId, 'Organization', organizationMessage, req.patient._id, 'Patient', 'subscription');
+            // Notify the organization (for organization-plan)
+            if (organizationId) {
+                const organizationMessage = `A patient has ${existingSubscription ? 'renewed' : 'subscribed to'} your organization plan "${plan.name}".`;
+                await createNotification(
+                    organizationId, 
+                    'Organization', 
+                    organizationMessage, 
+                    req.patient._id, 
+                    'Patient', 
+                    'subscription'
+                );
+            }
         }
 
         res.status(201).json({

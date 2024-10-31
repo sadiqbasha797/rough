@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {adminAuth} = require('../middleware/adminAuth');
+const {assistantAuth} = require('../middleware/assistantAuth');
 const { 
     updateAdminName, 
     updateAdminPassword,
@@ -38,7 +39,8 @@ const {
     getDetailedEarningsMonthWise,
     updateAdminInfo,
     updateAdminMedia,
-    getAdminProfile
+    getAdminProfile,
+    getAdminNotifications
  } = require('../controllers/adminController');
 const {createPortalPlan, createPlan} = require('../controllers/planController');
 const fileUpload = require('express-fileupload');
@@ -97,5 +99,5 @@ router.patch('/update-info', adminAuth, updateAdminInfo);
 router.patch('/update-media', adminAuth, fileUpload(), updateAdminMedia);
 
 router.get('/profile', adminAuth, getAdminProfile);
-
+router.get('/notifications', adminAuth, getAdminNotifications);
 module.exports = router;

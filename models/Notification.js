@@ -4,7 +4,7 @@ const notificationSchema = new mongoose.Schema({
   recipient: {
     id: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      default: null,
       refPath: 'recipient.model'
     },
     model: {

@@ -13,6 +13,7 @@ const Organization = require('../models/organization');
 const OrganizationSubscription = require('../models/org-subsciption');
 const ClinicianSubscription = require('../models/clinisistSubscription');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
+const Notification = require('../models/Notification');
 const updateAdminName = async(req, res) => {
     const {newName} = req.body;
 
@@ -2142,6 +2143,28 @@ const getAdminProfile = async (req, res) => {
     }
 };
 
+const getAdminNotifications = async (req, res) => {
+    try {
+        const notifications = await Notification.find({
+            'recipient.model': 'Admin'
+        }).sort({ createdAt: -1 }); // Sort by newest first
+
+        res.status(200).json({
+            status: 'success',
+            body: notifications,
+            message: 'Admin notifications retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching admin notifications:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching admin notifications',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -2179,6 +2202,7 @@ module.exports = {
     getDetailedEarningsMonthWise,
     updateAdminInfo,
     updateAdminMedia,
-    getAdminProfile
+    getAdminProfile,
+    getAdminNotifications
 };
 

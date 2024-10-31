@@ -74,6 +74,20 @@ const createOrgSubscription = async (req, res) => {
                 'subscription'
             );
             console.log('Notification created:', notification);
+
+            // Create notification for admin
+            const adminNotificationMessage = isRenewal
+                ? `Organization ${organization.name} renewed subscription for ${clinicians} clinicians.`
+                : `Organization ${organization.name} created new subscription for ${clinicians} clinicians.`;
+            const adminNotification = await createNotification(
+                null,
+                'Admin',
+                adminNotificationMessage,
+                null,
+                null,
+                'subscription'
+            );
+            console.log('Admin notification created:', adminNotification);
         } catch (notificationError) {
             console.error('Failed to create notification:', notificationError);
         }

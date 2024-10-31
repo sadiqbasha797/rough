@@ -67,6 +67,19 @@ const createClinicianSubscription = async (req, res) => {
             'subscription'
         );
 
+        // Create notification for admin
+        const adminNotificationMessage = isRenewal
+            ? `Clinician ${clinician.name} renewed subscription for plan: ${plan.planName}.`
+            : `Clinician ${clinician.name} created new subscription for plan: ${plan.planName}.`;
+        await createNotification(
+            null,
+            'Admin',
+            adminNotificationMessage,
+            null,
+            null,
+            'subscription'
+        );
+
         const emailSubject = isRenewal ? 'Subscription Renewal Confirmation' : 'New Subscription Confirmation';
         const emailBody = `Dear ${clinician.name},\n\n${isRenewal ? 'Your subscription has been renewed' : 'Your new subscription has been created'} successfully.\n\nDetails:\nPlan: ${plan.planName}\nStart Date: ${startDate}\nEnd Date: ${endDate}\nValidity: ${plan.validity} days\nTotal Price: $${plan.price}\n\nYour account is now active.\n\nThank you for your subscription!\n\nBest regards,\nYour Company Name`;
 
