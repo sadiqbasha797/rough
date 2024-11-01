@@ -107,8 +107,8 @@ router.get('/notifications', adminAuth, getAdminNotifications);
 
 // Assistant Management Routes
 router.get('/assistants', adminAuth, getAssistants);
-router.put('/assistants/:id', adminAuth, updateAssistant);
-router.delete('/assistants/:id', adminAuth, deleteAssistant);
+router.put('/assistants/:assistantId', adminAuth, updateAssistant);
+router.delete('/assistants/:assistantId', adminAuth, deleteAssistant);
 router.put('/assistants/permissions/:assistantId', adminAuth, updateAssistantPermissions);
 router.get('/assistants/permissions/:assistantId', adminAuth, getAssistantPermissions);
 
