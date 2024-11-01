@@ -1,4 +1,5 @@
 const Assistant = require('../models/assistant');
+const AssistantPermission = require('../models/assistantPermission');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
@@ -28,6 +29,25 @@ const registerAssistant = async (req, res) => {
         });
 
         if (assistant) {
+            await AssistantPermission.create({
+                assistantId: assistant._id,
+                permissions: {
+                    dashboard: false,
+                    earnings: false,
+                    patientManagement: false,
+                    clinicianManagement: false,
+                    organizationManagement: false,
+                    assistantManagement: false,
+                    planManagement: false,
+                    recommendation: false,
+                    patientSubscription: false,
+                    clinicianSubscription: false,
+                    organizationSubscription: false,
+                    assessments: false,
+                    announcements: false
+                }
+            });
+
             res.status(201).json({
                 status: 'success',
                 body: {
@@ -48,7 +68,10 @@ const registerAssistant = async (req, res) => {
             });
         }
     } catch (err) {
-        console.log(err.message);
+        console.error('Registration error:', err);
+        if (err.message.includes('permissions') && req.assistant) {
+            await Assistant.findByIdAndDelete(req.assistant._id);
+        }
         res.status(500).json({
             status: 'error',
             body: null,
@@ -348,6 +371,100 @@ const getAssistantCounts = async (req, res) => {
     }
 };
 
+const updateAssistantPermissions = async (req, res) => {
+    try {
+        const { assistantId } = req.params;
+        const { permissions } = req.body;
+        console.log(assistantId);
+        // Validate if assistantId exists
+        const assistant = await Assistant.findById(assistantId);
+        if (!assistant) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Assistant not found'
+            });
+        }
+
+        // Find and update permissions
+        const updatedPermissions = await AssistantPermission.findOneAndUpdate(
+            { assistantId },
+            { 
+                permissions: {
+                    dashboard: Boolean(permissions.dashboard),
+                    earnings: Boolean(permissions.earnings),
+                    patientManagement: Boolean(permissions.patientManagement),
+                    clinicianManagement: Boolean(permissions.clinicianManagement),
+                    organizationManagement: Boolean(permissions.organizationManagement),
+                    assistantManagement: Boolean(permissions.assistantManagement),
+                    planManagement: Boolean(permissions.planManagement),
+                    recommendation: Boolean(permissions.recommendation),
+                    patientSubscription: Boolean(permissions.patientSubscription),
+                    clinicianSubscription: Boolean(permissions.clinicianSubscription),
+                    organizationSubscription: Boolean(permissions.organizationSubscription),
+                    assessments: Boolean(permissions.assessments),
+                    announcements: Boolean(permissions.announcements)
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedPermissions) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Permissions not found for this assistant'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: updatedPermissions,
+            message: 'Permissions updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error updating assistant permissions:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating permissions',
+            error: error.message
+        });
+    }
+};
+
+const getAssistantPermissions = async (req, res) => {
+    try {
+        const { assistantId } = req.params;
+
+        const permissions = await AssistantPermission.findOne({ assistantId });
+
+        if (!permissions) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Permissions not found for this assistant'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: permissions,
+            message: 'Permissions retrieved successfully'
+        });
+
+    } catch (error) {
+        console.error('Error fetching assistant permissions:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching permissions',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     registerAssistant,
     loginAssistant,
@@ -357,5 +474,7 @@ module.exports = {
     updateAssistantInfo,
     updateAssistantMedia,
     deleteAssistant,
-    getAssistantCounts
+    getAssistantCounts,
+    updateAssistantPermissions,
+    getAssistantPermissions
 }; 

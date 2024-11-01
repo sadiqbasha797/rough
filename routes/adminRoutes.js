@@ -40,9 +40,13 @@ const {
     updateAdminInfo,
     updateAdminMedia,
     getAdminProfile,
-    getAdminNotifications
+    getAdminNotifications,
+    getAssistants,
+    updateAssistant,
+    deleteAssistant 
  } = require('../controllers/adminController');
 const {createPortalPlan, createPlan} = require('../controllers/planController');
+const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
 const fileUpload = require('express-fileupload');
 require('../config/passport');
 
@@ -100,4 +104,12 @@ router.patch('/update-media', adminAuth, fileUpload(), updateAdminMedia);
 
 router.get('/profile', adminAuth, getAdminProfile);
 router.get('/notifications', adminAuth, getAdminNotifications);
+
+// Assistant Management Routes
+router.get('/assistants', adminAuth, getAssistants);
+router.put('/assistants/:id', adminAuth, updateAssistant);
+router.delete('/assistants/:id', adminAuth, deleteAssistant);
+router.put('/assistants/permissions/:assistantId', adminAuth, updateAssistantPermissions);
+router.get('/assistants/permissions/:assistantId', adminAuth, getAssistantPermissions);
+
 module.exports = router;

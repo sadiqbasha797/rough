@@ -14,6 +14,7 @@ const OrganizationSubscription = require('../models/org-subsciption');
 const ClinicianSubscription = require('../models/clinisistSubscription');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
 const Notification = require('../models/Notification');
+const Assistant = require('../models/assistant');
 const updateAdminName = async(req, res) => {
     const {newName} = req.body;
 
@@ -2164,6 +2165,102 @@ const getAdminNotifications = async (req, res) => {
         });
     }
 };
+const getAssistants = async (req, res) => {
+    try {
+        const assistants = await Assistant.find({})
+            .select('-password')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            status: 'success',
+            body: assistants,
+            message: 'Assistants retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching assistants:', error);
+        res.status(500).json({
+            status: 'error', 
+            body: null,
+            message: 'Error fetching assistants',
+            error: error.message
+        });
+    }
+};
+
+const updateAssistant = async (req, res) => {
+    try {
+        const { assistantId } = req.params;
+        const updateData = req.body;
+
+        // Remove password from update data if present for security
+        delete updateData.password;
+
+        const assistant = await Assistant.findByIdAndUpdate(
+            assistantId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!assistant) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Assistant not found'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: assistant,
+            message: 'Assistant updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error updating assistant:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating assistant',
+            error: error.message
+        });
+    }
+};
+
+const deleteAssistant = async (req, res) => {
+    try {
+        const { assistantId } = req.params;
+
+        const assistant = await Assistant.findByIdAndDelete(assistantId);
+
+        if (!assistant) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Assistant not found'
+            });
+        }
+
+        // Delete assistant's profile image from S3 if exists
+        if (assistant.image) {
+            await deleteFile(assistant.image);
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: null,
+            message: 'Assistant deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Error deleting assistant:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error deleting assistant',
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     registerAdmin,
@@ -2203,6 +2300,9 @@ module.exports = {
     updateAdminInfo,
     updateAdminMedia,
     getAdminProfile,
-    getAdminNotifications
+    getAdminNotifications,
+    getAssistants,
+    updateAssistant,
+    deleteAssistant
 };
 
