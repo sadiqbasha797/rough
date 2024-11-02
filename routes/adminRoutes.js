@@ -104,6 +104,7 @@ router.patch('/update-media', adminAuth, fileUpload(), updateAdminMedia);
 
 router.get('/profile', adminAuth, getAdminProfile);
 router.get('/notifications', adminAuth, getAdminNotifications);
+router.get('/notifications-assistant', assistantAuth, getAdminNotifications);
 
 // Assistant Management Routes
 router.get('/assistants', adminAuth, getAssistants);
