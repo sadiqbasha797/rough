@@ -45,6 +45,7 @@ const {
         getTotalSubscriptionCounts,
         getDetailedEarningsMonthWise
     } = require('../controllers/adminController');
+const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
 
 // Public routes
 router.post('/register', registerAssistant);
@@ -97,5 +98,7 @@ router.get('/subscription-counts-month-wise', assistantAuth, getSubscriptionCoun
 router.get('/detailed-subscription-counts-month-wise', assistantAuth, getDetailedSubscriptionCountsMonthWise);
 router.get('/total-subscription-counts', assistantAuth, getTotalSubscriptionCounts);
 router.get('/detailed-earnings-month-wise', assistantAuth, getDetailedEarningsMonthWise);
+
+router.get('/get-permissions/:assistantId',  getAssistantPermissions);
 
 module.exports = router; 
