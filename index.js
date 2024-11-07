@@ -25,7 +25,7 @@ const mood = require('./routes/moodAssessmentRoutes');
 const clinicianSubRoutes = require('./routes/clinisistSubRoutes');
 const clinicistPlanRoutes = require('./routes/clinicistPlanRoutes');
 const assistantRoutes = require('./routes/assistantRoutes');
-
+const faqRoutes = require('./routes/faqRoutes');
 dotenv.config();
 connectDB();
 
@@ -57,6 +57,7 @@ app.use('/api/sub', mood);
 app.use('/api/doctorSub', clinicianSubRoutes);
 app.use('/api/clinicistPlan', clinicistPlanRoutes);
 app.use('/api/assistant', assistantRoutes);
+app.use('/api/faq', faqRoutes);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

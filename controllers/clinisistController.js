@@ -13,7 +13,7 @@ const AssessmentInfo = require('../models/assessmentInfo');
 const mongoose = require('mongoose');
 const Recommendation = require('../models/Recommendation'); // Make sure to import your Recommendation model
 const calculateDistance = require('../utils/calculateDistance');
-
+const PatientInfo = require('../models/patientInfo');
 // Update Doctor's Image using S3
 const updateDoctorImage = async (req, res) => {
     const clinisistId = req.params.id;
@@ -340,7 +340,7 @@ const getSubscribedPatientsAssessments = async (req, res) => {
         // Extract patient IDs from subscriptions
         const patientIds = subscriptions.map(sub => sub.patient);
 
-        // Fetch patients and their latest assessment info
+        // Fetch patients, their latest assessment info, and patient info
         const patientsWithAssessments = await Patient.aggregate([
             { $match: { _id: { $in: patientIds } } },
             {
@@ -355,7 +355,18 @@ const getSubscribedPatientsAssessments = async (req, res) => {
                     as: 'latestAssessment'
                 }
             },
-            { $unwind: { path: '$latestAssessment', preserveNullAndEmptyArrays: true } }
+            {
+                $lookup: {
+                    from: 'patientinfos',
+                    let: { patientId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$patientId', '$$patientId'] } } }
+                    ],
+                    as: 'patientInfo'
+                }
+            },
+            { $unwind: { path: '$latestAssessment', preserveNullAndEmptyArrays: true } },
+            { $unwind: { path: '$patientInfo', preserveNullAndEmptyArrays: true } }
         ]);
 
         // Combine patient info with subscription and assessment details
@@ -368,7 +379,6 @@ const getSubscribedPatientsAssessments = async (req, res) => {
                     email: patient.email,
                     dateOfBirth: patient.dateOfBirth,
                     mobile: patient.mobile,
-                    // Add other patient fields as needed
                 },
                 subscription: {
                     planName: subscription.plan.name,
@@ -376,7 +386,8 @@ const getSubscribedPatientsAssessments = async (req, res) => {
                     endDate: subscription.endDate,
                     renewal: subscription.renewal
                 },
-                latestAssessment: patient.latestAssessment || null
+                latestAssessment: patient.latestAssessment || null,
+                patientInfo: patient.patientInfo || null
             };
         });
 
@@ -400,27 +411,36 @@ const getAssessmentInfoByPatientId = async (req, res) => {
         const { patientId } = req.params;
         console.log('Searching for assessments with Patient ID:', patientId);
 
-        const assessmentInfos = await AssessmentInfo.find({ patientId }).sort({ createdAt: -1 });
-        console.log('Assessment infos found:', assessmentInfos);
+        // Get both assessment infos and patient infos
+        const [assessmentInfos, patientInfo] = await Promise.all([
+            AssessmentInfo.find({ patientId }).sort({ createdAt: -1 }),
+            PatientInfo.findOne({ patientId })
+        ]);
 
-        if (!assessmentInfos || assessmentInfos.length === 0) {
-            console.log('No assessment info found for Patient ID:', patientId);
+        console.log('Assessment infos found:', assessmentInfos);
+        console.log('Patient info found:', patientInfo);
+
+        if ((!assessmentInfos || assessmentInfos.length === 0) && !patientInfo) {
+            console.log('No information found for Patient ID:', patientId);
             return res.status(404).json({
                 status: 'error',
-                message: 'No assessment information found for this patient'
+                message: 'No information found for this patient'
             });
         }
 
         res.status(200).json({
             status: 'success',
-            data: assessmentInfos,
-            message: 'Assessment information retrieved successfully'
+            data: {
+                assessmentInfos,
+                patientInfo: patientInfo || null
+            },
+            message: 'Patient information retrieved successfully'
         });
     } catch (error) {
-        console.error('Error fetching assessment information:', error);
+        console.error('Error fetching patient information:', error);
         res.status(500).json({
             status: 'error',
-            message: 'An error occurred while fetching assessment information',
+            message: 'An error occurred while fetching patient information',
             error: error.message
         });
     }
