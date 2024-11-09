@@ -1081,6 +1081,7 @@ const updateOrganizationData = async (req, res) => {
     }
 };
 
+
 module.exports = {
     getClinisistsByOrganization,
     registerOrganization,

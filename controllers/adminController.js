@@ -1479,6 +1479,17 @@ const getDetailedSubscriptionCountsMonthWise = async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: 'plans',
+                    localField: 'plan',
+                    foreignField: '_id',
+                    as: 'planDetails'
+                }
+            },
+            {
+                $unwind: '$planDetails'
+            },
+            {
                 $group: {
                     _id: {
                         year: { $year: '$startDate' },
@@ -2261,6 +2272,123 @@ const deleteAssistant = async (req, res) => {
         });
     }
 };
+const getOrganizationById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organization = await Organization.findById(id).select('-password');
+        
+        if (!organization) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Organization not found'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            body: organization,
+            message: 'Organization details retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching organization:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching organization'
+        });
+    }
+};
+
+const updateOrganization = async (req, res) => {
+    try {
+        const { organizationId } = req.params;
+        const updateData = req.body;
+
+        // Fields that are allowed to be updated
+        const allowedUpdates = ['name', 'founder', 'companyName', 'established', 'address', 'mobile', 'socialProfile', 'active'];
+
+        // Filter out any fields that are not in the allowedUpdates array
+        const filteredData = Object.keys(updateData)
+            .filter(key => allowedUpdates.includes(key))
+            .reduce((obj, key) => {
+                obj[key] = updateData[key];
+                return obj;
+            }, {});
+
+        const organization = await Organization.findByIdAndUpdate(
+            organizationId,
+            filteredData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!organization) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Organization not found'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            body: organization,
+            message: 'Organization updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating organization:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating organization'
+        });
+    }
+};
+
+const deleteOrganization = async (req, res) => {
+    try {
+        const { organizationId } = req.params;
+
+        const organization = await Organization.findById(organizationId);
+
+        if (!organization) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Organization not found'
+            });
+        }
+
+        // Delete organization's image from S3 if exists
+        if (organization.image) {
+            await deleteFile(organization.image);
+        }
+
+        // Delete the organization
+        await Organization.findByIdAndDelete(organizationId);
+
+        // Update related records
+        await OrgAdmin.deleteMany({ organization: organizationId });
+        await Manager.deleteMany({ organization: organizationId });
+        await Clinisist.updateMany(
+            { organization: organizationId },
+            { $set: { organization: null } }
+        );
+
+        res.json({
+            status: 'success',
+            body: null,
+            message: 'Organization and related data deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting organization:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error deleting organization'
+        });
+    }
+};
 
 module.exports = {
     registerAdmin,
@@ -2268,6 +2396,9 @@ module.exports = {
     updateAdminName, 
     updateAdminPassword,
     getAllOrganizations,
+    getOrganizationById,
+    updateOrganization,
+    deleteOrganization,
     getOrganizationStats,
     getPatients,
     getDoctors,
