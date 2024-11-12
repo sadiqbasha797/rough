@@ -26,6 +26,7 @@ const clinicianSubRoutes = require('./routes/clinisistSubRoutes');
 const clinicistPlanRoutes = require('./routes/clinicistPlanRoutes');
 const assistantRoutes = require('./routes/assistantRoutes');
 const faqRoutes = require('./routes/faqRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');      
 dotenv.config();
 connectDB();
 
@@ -58,6 +59,7 @@ app.use('/api/doctorSub', clinicianSubRoutes);
 app.use('/api/clinicistPlan', clinicistPlanRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/faq', faqRoutes);
+app.use('/api/announcement', announcementRoutes);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

@@ -306,10 +306,16 @@ const authClinisist = async (req, res) => {
 };
 
 const sendPasswordResetEmail = async (req, res) => {
-    const { email } = req.body;
+    const { email, userType } = req.body;
     try {
-        const patient = await Patient.findOne({ email });
-        if (!patient) {
+        let user;
+        if (userType === 'patient') {
+            user = await Patient.findOne({ email });
+        } else if (userType === 'clinisist') {
+            user = await Clinisist.findOne({ email });
+        }
+
+        if (!user) {
             return res.status(404).json({
                 status: 'error',
                 body: null,
@@ -320,9 +326,9 @@ const sendPasswordResetEmail = async (req, res) => {
         const resetToken = crypto.randomBytes(20).toString('hex');
         const tokenExpiration = Date.now() + 3600000; // 1 hour before the token expires
 
-        patient.resetPasswordToken = resetToken;
-        patient.resetPasswordExpires = tokenExpiration;
-        await patient.save();
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = tokenExpiration;
+        await user.save();
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -332,7 +338,7 @@ const sendPasswordResetEmail = async (req, res) => {
             }
         });
 
-        const resetUrl = `http://localhost:3000/api/auth/reset/${resetToken}`;
+        const resetUrl = `http://localhost:3000/api/auth/reset/${resetToken}?userType=${userType}`;
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
@@ -368,15 +374,23 @@ const sendPasswordResetEmail = async (req, res) => {
 
 const resetPassword = async (req, res) => {
     const { token } = req.params;
-    const { password } = req.body;
+    const { password, userType } = req.body;
 
     try {
-        const patient = await Patient.findOne({
-            resetPasswordToken: token,
-            resetPasswordExpires: { $gt: Date.now() }
-        });
+        let user;
+        if (userType === 'patient') {
+            user = await Patient.findOne({
+                resetPasswordToken: token,
+                resetPasswordExpires: { $gt: Date.now() }
+            });
+        } else if (userType === 'clinisist') {
+            user = await Clinisist.findOne({
+                resetPasswordToken: token,
+                resetPasswordExpires: { $gt: Date.now() }
+            });
+        }
 
-        if (!patient) {
+        if (!user) {
             return res.status(400).json({
                 status: 'error',
                 body: null,
@@ -387,13 +401,17 @@ const resetPassword = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        patient.password = hashedPassword;
-        patient.resetPasswordToken = undefined;
-        patient.resetPasswordExpires = undefined;
-        await patient.save();
+        user.password = hashedPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
 
         const message = 'Your password has been successfully updated.';
-        await createNotification(patient._id, 'Patient', message, null, null, 'alert');
+        if (userType === 'patient') {
+            await createNotification(user._id, 'Patient', message, null, null, 'alert');
+        } else if (userType === 'clinisist') {
+            await createNotification(user._id, 'Clinisist', message, null, null, 'alert');
+        }
 
         res.status(200).json({
             status: 'success',

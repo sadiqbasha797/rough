@@ -2302,10 +2302,10 @@ const getOrganizationById = async (req, res) => {
 
 const updateOrganization = async (req, res) => {
     try {
-        const { organizationId } = req.params;
+        const { id } = req.params;
         const updateData = req.body;
 
-        // Fields that are allowed to be updated
+        // Fields that are allowed to be updated by the admin
         const allowedUpdates = ['name', 'founder', 'companyName', 'established', 'address', 'mobile', 'socialProfile', 'active'];
 
         // Filter out any fields that are not in the allowedUpdates array
@@ -2317,7 +2317,7 @@ const updateOrganization = async (req, res) => {
             }, {});
 
         const organization = await Organization.findByIdAndUpdate(
-            organizationId,
+            id, // Use extracted id directly
             filteredData,
             { new: true, runValidators: true }
         ).select('-password');
@@ -2347,9 +2347,13 @@ const updateOrganization = async (req, res) => {
 
 const deleteOrganization = async (req, res) => {
     try {
-        const { organizationId } = req.params;
+        const { id } = req.params;
 
-        const organization = await Organization.findById(organizationId);
+        // Import required models at the top level
+        const OrgAdmin = require('../models/orgAdmin');
+        const Manager = require('../models/manager');
+
+        const organization = await Organization.findById(id);
 
         if (!organization) {
             return res.status(404).json({
@@ -2365,13 +2369,13 @@ const deleteOrganization = async (req, res) => {
         }
 
         // Delete the organization
-        await Organization.findByIdAndDelete(organizationId);
+        await Organization.findByIdAndDelete(id);
 
-        // Update related records
-        await OrgAdmin.deleteMany({ organization: organizationId });
-        await Manager.deleteMany({ organization: organizationId });
+        // Update related records using the imported models
+        await OrgAdmin.deleteMany({ organization: id });
+        await Manager.deleteMany({ organization: id });
         await Clinisist.updateMany(
-            { organization: organizationId },
+            { organization: id },
             { $set: { organization: null } }
         );
 
@@ -2385,7 +2389,8 @@ const deleteOrganization = async (req, res) => {
         res.status(500).json({
             status: 'error',
             body: null,
-            message: 'Error deleting organization'
+            message: 'Error deleting organization',
+            error: error.message
         });
     }
 };

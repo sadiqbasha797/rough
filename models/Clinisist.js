@@ -140,7 +140,15 @@ const ClinisistSchema = new mongoose.Schema({
     type: String,
     required: false,
     default: null
-  }
+  },
+  verificationToken: String,
+  tokenExpiration: Date,
+  score: {
+      type: Number,
+      default: 0
+  },
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
 }, { timestamps: true }); 
 
 const Clinisist = mongoose.model('Clinisist', ClinisistSchema);
