@@ -15,6 +15,7 @@ const ClinicianSubscription = require('../models/clinisistSubscription');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
 const Notification = require('../models/Notification');
 const Assistant = require('../models/assistant');
+const OrgSubscription = require('../models/org-subsciption');
 const updateAdminName = async(req, res) => {
     const {newName} = req.body;
 
@@ -86,10 +87,24 @@ const getAllOrganizations = async (req, res) => {
                 message: 'No organizations found',
             });
         }
+
+        // Fetch subscriptions for each organization
+        const organizationsWithSubscriptions = await Promise.all(
+            organizations.map(async (org) => {
+                const subscription = await OrgSubscription.findOne({ 
+                    organization: org._id 
+                });
+                return {
+                    ...org.toObject(),
+                    subscription: subscription || null
+                };
+            })
+        );
+
         return res.status(200).json({
             status: 'success',
-            body: organizations,
-            message: 'Organizations fetched successfully',
+            body: organizationsWithSubscriptions,
+            message: 'Organizations fetched successfully with subscription details',
         });
     } catch (err) {
         return res.status(500).json({

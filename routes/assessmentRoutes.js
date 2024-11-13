@@ -20,9 +20,9 @@ router.get('/:id', getAssessmentById);
 
 
 // Protected routes
-router.post('/create', adminAuth, upload.single('media'), createAssessment);
-router.put('/:id', adminAuth, upload.single('media'), updateAssessment);
-router.delete('/:id', adminAuth, deleteAssessment);
+router.post('/create',  upload.single('media'), createAssessment);
+router.put('/:id',  upload.single('media'), updateAssessment);
+router.delete('/:id',  deleteAssessment);
 router.post('/take-assessment', takeAssessment);
 
 module.exports = router;
