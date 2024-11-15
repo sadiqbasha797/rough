@@ -92,29 +92,34 @@ const updatePassword = async (req, res) => {
 
     try {
         const clinisist = await Clinisist.findById(req.clinisist._id);
-
-        if (clinisist && (await bcrypt.compare(oldPassword, clinisist.paswd))) {
-            const salt = await bcrypt.genSalt(10);
-            clinisist.paswd = await bcrypt.hash(newPassword, salt);
-            await clinisist.save();
-            res.json({
-                status: "success",
-                body: null,
-                message: "Password changed successfully"
-            });
-        } else {
-            res.status(401).json({
+        
+        // Compare old password
+        const isMatch = await bcrypt.compare(oldPassword, clinisist.password); // Note: changed paswd to password
+        
+        if (!isMatch) {
+            return res.status(401).json({
                 status: "error",
                 body: null,
-                message: "Old password not correct"
+                message: "Old password is incorrect"
             });
         }
+
+        // Update password
+        const salt = await bcrypt.genSalt(10);
+        clinisist.password = await bcrypt.hash(newPassword, salt); // Note: changed paswd to password
+        await clinisist.save();
+
+        res.json({
+            status: "success",
+            body: null,
+            message: "Password changed successfully"
+        });
     } catch (err) {
-        console.log(err);
+        console.error('Password update error:', err);
         res.status(500).json({
             status: "error",
             body: null,
-            message: err.message
+            message: "An error occurred while updating password"
         });
     }
 };
