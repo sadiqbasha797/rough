@@ -45,7 +45,15 @@ const adminSchema = new mongoose.Schema({
     },
     image: {
         type: String,
-    }
+    },
+    otp: {
+        type: String,
+        default: null,
+    },
+    otpExpires: {
+        type: Date,
+        default: null,
+    },
 });
 
 const Admin = mongoose.model('Admin', adminSchema);

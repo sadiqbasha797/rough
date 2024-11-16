@@ -1,15 +1,38 @@
 const generateOTP = require('../utils/generateOtp');
 const sendEmail = require('../utils/mailUtil');
-const OrgAdmin = require('../models/orgAdmin'); // Change this for different models
-const Manager = require('../models/manager');   // Change this for different models
-const Organization = require('../models/organization'); // Change this for different models
+const OrgAdmin = require('../models/orgAdmin');
+const Manager = require('../models/manager');
+const Organization = require('../models/organization');
+const Admin = require('../models/admin');
+const Assistant = require('../models/assistant');
 
 const forgotPassword = async (req, res, userModel) => {
-    const { email } = req.body;
+    const { email, userType } = req.body;
 
     try {
+        let model;
+        switch(userType) {
+            case 'admin':
+                model = Admin;
+                break;
+            case 'assistant': 
+                model = Assistant;
+                break;
+            case 'orgAdmin':
+                model = OrgAdmin;
+                break;
+            case 'manager':
+                model = Manager;
+                break;
+            case 'organization':
+                model = Organization;
+                break;
+            default:
+                model = userModel;
+        }
+
         // Find user by email
-        const user = await userModel.findOne({ email });
+        const user = await model.findOne({ email });
 
         if (!user) {
             return res.status(404).json({

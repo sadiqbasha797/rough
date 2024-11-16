@@ -18,7 +18,14 @@ const assistantSchema = new mongoose.Schema({
     address: {
         type: String,
     },
-   
+    otp: {
+        type: String,
+        default: null,
+    },
+    otpExpires: {
+        type: Date,
+        default: null,
+    },
     socialMediaLinks: {
         type: [String],
     },

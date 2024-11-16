@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const OrgAdmin = require('../models/orgAdmin'); // Change this for different models
 const Manager = require('../models/manager');   // Change this for different models
 const Organization = require('../models/organization'); // Change this for different models
+const Admin = require('../models/admin');
+const Assistant = require('../models/assistant');
 
 const resetPassword = async (req, res, userModel) => {
     const { otp, newPassword } = req.body;
