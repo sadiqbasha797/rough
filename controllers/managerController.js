@@ -595,8 +595,8 @@ const getSubscriptionBudgetByManager = async (req, res) => {
             status: 'success',
             body: {
                 monthlyEarnings,
-                totalEarningsThisYear: totalEarnings,
-                allTimeEarnings: allTimeEarnings[0] ? allTimeEarnings[0].totalEarnings : 0
+                currentYearTotal: totalEarnings,
+                allTimeTotal: allTimeEarnings[0] ? allTimeEarnings[0].totalEarnings : 0
             },
             message: 'Subscription budget retrieved successfully'
         });
