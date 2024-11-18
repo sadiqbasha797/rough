@@ -178,6 +178,14 @@ const getSubscriptionByPatient = async (req, res) => {
                 }
             });
 
+        if (!subscriptions || subscriptions.length === 0) {
+            return res.json({
+                status: "success", 
+                body: [],
+                message: "No subscriptions found"
+            });
+        }
+
         // Map through subscriptions to conditionally include clinician name
         const subscriptionsWithOptionalClinicianName = subscriptions.map(sub => {
             if (sub.plan.type === 'doctor-plan' && sub.plan.createdBy) {
@@ -211,45 +219,35 @@ const getSubscriptionByPatient = async (req, res) => {
 
 const getSubscribedClinicians = async (req, res) => {
     try {
-        // Fetch subscriptions for the patient and populate the plan field
-        const subscriptions = await Subscription.find({ patient: req.patient._id }).populate('plan');
+        // Fetch subscriptions for the patient and populate both plan and clinisist details
+        const subscriptions = await Subscription.find({ patient: req.patient._id })
+            .populate({
+                path: 'plan',
+                model: 'Plan'
+            })
+            .populate({
+                path: 'clinisist',
+                model: 'Clinisist'
+            });
 
-        // Map to store clinicians with their corresponding subscribed plans
-        const clinicianSubscriptions = {};
+        if (!subscriptions || subscriptions.length === 0) {
+            return res.json({
+                status: 'success',
+                body: [],
+                message: 'No subscribed clinicians found'
+            });
+        }
 
-        subscriptions.forEach(sub => {
-            const clinicianId = sub.plan.createdBy.toString();
-            if (!clinicianSubscriptions[clinicianId]) {
-                clinicianSubscriptions[clinicianId] = {
-                    clinician: null,
-                    plans: []
-                };
-            }
-            clinicianSubscriptions[clinicianId].plans.push(sub.plan);
-        });
-
-        // Fetch the clinician details
-        const clinicianIds = Object.keys(clinicianSubscriptions);
-        const clinicians = await Clinisist.find({ _id: { $in: clinicianIds } });
-
-        // Attach the clinician details to the corresponding subscriptions
-        clinicians.forEach(clinician => {
-            const clinicianId = clinician._id.toString();
-            if (clinicianSubscriptions[clinicianId]) {
-                clinicianSubscriptions[clinicianId].clinician = clinician;
-            }
-        });
-
-        // Prepare the response array
-        const response = Object.values(clinicianSubscriptions).map(item => ({
-            clinician: item.clinician,
-            subscribedPlans: item.plans
+        // Format the response data
+        const response = subscriptions.map(subscription => ({
+            plan: subscription.plan,
+            clinician: subscription.clinisist
         }));
 
         res.json({
             status: 'success',
             body: response,
-            message: 'Subscribed clinicians retrieved successfully'
+            message: 'Subscribed clinicians and plans retrieved successfully'
         });
     } catch (err) {
         res.status(500).json({

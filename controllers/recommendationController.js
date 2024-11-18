@@ -264,9 +264,9 @@ const getDoctorRecommendations = async (req, res) => {
         }).populate('recommendedBy'); // Populate with Clinisist data
 
         if (doctorRecommendations.length === 0) {
-            return res.status(404).json({
-                status: "error",
-                body: null,
+            return res.json({
+                status: "success",
+                body: [],
                 message: "No doctor recommendations found for this category and patient"
             });
         }
@@ -297,9 +297,9 @@ const getPortalRecommendations = async (req, res) => {
         });
 
         if (portalRecommendations.length === 0) {
-            return res.status(404).json({
-                status: "error",
-                body: null,
+            return res.json({
+                status: "success",
+                body: [],
                 message: "No portal recommendations found for this patient"
             });
         }
