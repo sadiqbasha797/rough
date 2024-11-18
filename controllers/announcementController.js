@@ -55,6 +55,34 @@ exports.getAnnouncements = async (req, res) => {
     }
 };
 
+exports.getAnnouncementById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const announcement = await Announcement.findById(id);
+
+        if (!announcement) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Announcement not found'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            body: announcement,
+            message: 'Announcement retrieved successfully'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error retrieving announcement'
+        });
+    }
+};
+
 exports.updateAnnouncement = async (req, res) => {
     try {
         const { id } = req.params;

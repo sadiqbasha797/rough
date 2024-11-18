@@ -8,5 +8,5 @@ router.post('/', upload.single('media'), announcementController.createAnnounceme
 router.get('/', announcementController.getAnnouncements);
 router.put('/:id', upload.single('media'), announcementController.updateAnnouncement);
 router.delete('/:id', announcementController.deleteAnnouncement);
-
+router.get('/:id', announcementController.getAnnouncementById);
 module.exports = router; 
