@@ -450,7 +450,7 @@ const getSubscriptionCountsByManager = async (req, res) => {
             return res.status(200).json({
                 status: 'success',
                 body: {
-                    activeSubscriptions: 0,
+                    validSubscriptions: 0,
                     renewalSubscriptions: 0,
                     endedSubscriptions: 0
                 },
@@ -485,7 +485,7 @@ const getSubscriptionCountsByManager = async (req, res) => {
         res.status(200).json({
             status: 'success',
             body: {
-                activeSubscriptions: activeCount,
+                validSubscriptions: activeCount,
                 renewalSubscriptions: renewalCount,
                 endedSubscriptions: endedCount
             },
@@ -527,14 +527,20 @@ const getSubscriptionBudgetByManager = async (req, res) => {
             clinisist: { $in: clinisistIds }
         };
 
-        let currentYear = new Date().getFullYear();
-        let yearStart = new Date(currentYear, 0, 1);
-        let yearEnd = new Date(currentYear, 11, 31);
+        let yearStart, yearEnd, currentYear;
 
         if (startDate && endDate) {
             matchCondition.startDate = { $gte: new Date(startDate) };
             matchCondition.endDate = { $lte: new Date(endDate) };
+            
+            // Use the year from startDate for monthly calculations
+            currentYear = new Date(startDate).getFullYear();
+            yearStart = new Date(startDate);
+            yearEnd = new Date(endDate);
         } else {
+            currentYear = new Date().getFullYear();
+            yearStart = new Date(currentYear, 0, 1);
+            yearEnd = new Date(currentYear, 11, 31);
             matchCondition.startDate = { $gte: yearStart };
             matchCondition.endDate = { $lte: yearEnd };
         }
@@ -560,9 +566,22 @@ const getSubscriptionBudgetByManager = async (req, res) => {
         ]);
 
         const monthlyEarnings = {};
-        for (let i = 0; i < 12; i++) {
-            const month = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
-            monthlyEarnings[month] = 0;
+        
+        // Calculate months between start and end date
+        const startMonth = yearStart.getMonth();
+        const endMonth = yearEnd.getMonth();
+        const startYear = yearStart.getFullYear();
+        const endYear = yearEnd.getFullYear();
+        
+        // Initialize all months between start and end date
+        for (let year = startYear; year <= endYear; year++) {
+            const monthStart = year === startYear ? startMonth : 0;
+            const monthEnd = year === endYear ? endMonth : 11;
+            
+            for (let month = monthStart; month <= monthEnd; month++) {
+                const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+                monthlyEarnings[monthKey] = 0;
+            }
         }
 
         subscriptions.forEach(sub => {

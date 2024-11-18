@@ -3,6 +3,7 @@ const Plan = require('../models/plan');
 const createNotification = require('../utils/createNotification');
 const Clinisist = require('../models/Clinisist');
 const patient = require('../models/patient');
+
 const createSubscription = async (req, res) => {
     const { planId } = req.params;
     const { clinisistId } = req.body; // New input for organization plans
@@ -34,7 +35,7 @@ const createSubscription = async (req, res) => {
             subscriptionClinisistId = clinisistId;
         } else if (plan.planType === 'organization-plan') {
             organizationId = plan.createdBy;
-            subscriptionClinisistId = clinisistId; // Use the provided clinisistId for organization plans
+            subscriptionClinisistId = clinisistId || null; // Use the provided clinisistId or null if not passed
         }
 
         let createdSubscription;
