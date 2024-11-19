@@ -2031,7 +2031,15 @@ const updateAdminInfo = async (req, res) => {
         if (email) admin.email = email;
         if (companyName) admin.companyName = companyName;
         if (address) admin.address = address;
-        if (socialMediaLinks) admin.socialMediaLinks = socialMediaLinks;
+        if (socialMediaLinks) {
+            admin.socialMediaLinks = {
+                twitter: socialMediaLinks.twitter || admin.socialMediaLinks.twitter,
+                email: socialMediaLinks.email || admin.socialMediaLinks.email,
+                facebook: socialMediaLinks.facebook || admin.socialMediaLinks.facebook,
+                instagram: socialMediaLinks.instagram || admin.socialMediaLinks.instagram,
+                linkedin: socialMediaLinks.linkedin || admin.socialMediaLinks.linkedin
+            };
+        }
         if (contact) admin.contact = contact;
         if (founderName) admin.founderName = founderName;
         if (established) admin.established = established;

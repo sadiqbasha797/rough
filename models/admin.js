@@ -24,7 +24,21 @@ const adminSchema = new mongoose.Schema({
         type: String,
     },
     socialMediaLinks: {
-        type: [String],
+        twitter: {
+            type: String
+        },
+        email: {
+            type: String
+        },
+        facebook: {
+            type: String
+        },
+        instagram: {
+            type: String
+        },
+        linkedin: {
+            type: String
+        }
     },
     contact: {
         email: {

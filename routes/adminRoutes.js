@@ -105,7 +105,7 @@ router.get('/detailed-subscription-counts-month-wise', adminAuth, getDetailedSub
 router.get('/total-subscription-counts', adminAuth, getTotalSubscriptionCounts);
 router.get('/detailed-earnings-month-wise', adminAuth, getDetailedEarningsMonthWise);
 
-router.patch('/update-info', adminAuth, updateAdminInfo);
+router.put('/update-info', adminAuth, updateAdminInfo);
 router.patch('/update-media', adminAuth, fileUpload(), updateAdminMedia);
 
 router.get('/profile', adminAuth, getAdminProfile);
