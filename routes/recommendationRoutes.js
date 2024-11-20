@@ -19,12 +19,12 @@ const {
 } = require('../controllers/recommendationController');
 
 // Routes
-router.post('/create-rec', adminAuth, createRecommendation);
+router.post('/create-rec',  createRecommendation);
 router.post('/create-doctor-rec', clincistProtect, createDoctorRecommendation);
 router.get('/recommendations', getRecommendations);
 router.get('/recommendations/:id', getRecommendationById);
-router.put('/recommendations/:id', adminAuth, updateRecommendation);
-router.delete('/recommendations/:id', adminAuth, deleteRecommendation);
+router.put('/recommendations/:id',  updateRecommendation);
+router.delete('/recommendations/:id',  deleteRecommendation);
 router.get('/doctor_recommendations',patientProtect, getDoctorRecommendations);
 router.get('/portal_recommendations',patientProtect, getPortalRecommendations);
 router.delete('/recommendations/:recommendationId/media/:mediaType/:mediaId', deleteMedia);
