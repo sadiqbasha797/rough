@@ -3,14 +3,12 @@ const ClinicistPlan = require('../models/clinisistPlan');
 // Create a new clinicist plan
 const createClinicistPlan = async (req, res) => {
     try {
-        const { planName, price, startDate, endDate, validity, description, active } = req.body;
+        const { planName, price, description, validity, active } = req.body;
         const newPlan = new ClinicistPlan({
             planName,
             price,
-            startDate,
-            endDate,
-            validity,
             description,
+            validity,
             active
         });
         
@@ -71,10 +69,10 @@ const getClinicistPlanById = async (req, res) => {
 // Update a clinicist plan
 const updateClinicistPlan = async (req, res) => {
     try {
-        const { planName, price, startDate, endDate, validity, description, active } = req.body;
+        const { planName, price, description, validity, active } = req.body;
         const updatedPlan = await ClinicistPlan.findByIdAndUpdate(
             req.params.id,
-            { planName, price, startDate, endDate, validity, description, active },
+            { planName, price, description, validity, active },
             { new: true, runValidators: true }
         );
         

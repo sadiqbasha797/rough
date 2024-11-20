@@ -8,7 +8,7 @@ const Clinisist = require('../models/Clinisist');
 const Subscription = require('../models/subscription');
 const Notification = require('../models/Notification');
 const Patient = require('../models/patient');
-
+const moment = require('moment');
 const registerManager = async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -503,7 +503,7 @@ const getSubscriptionCountsByManager = async (req, res) => {
 const getSubscriptionBudgetByManager = async (req, res) => {
     try {
         const managerId = req.manager._id;
-        const { startDate, endDate } = req.query;
+        let { startDate, endDate } = req.query;
 
         // Find clinisists created by this manager
         const clinisists = await Clinisist.find({ createdBy: managerId });
@@ -520,105 +520,89 @@ const getSubscriptionBudgetByManager = async (req, res) => {
             });
         }
 
-        // Get the IDs of these clinisists
         const clinisistIds = clinisists.map(clinisist => clinisist._id);
 
-        let matchCondition = {
-            clinisist: { $in: clinisistIds }
-        };
+        const currentDate = moment();
+        const currentYear = currentDate.year();
 
-        let yearStart, yearEnd, currentYear;
+        let start, end;
+        let isCurrentYearQuery = false;
 
-        if (startDate && endDate) {
-            matchCondition.startDate = { $gte: new Date(startDate) };
-            matchCondition.endDate = { $lte: new Date(endDate) };
-            
-            // Use the year from startDate for monthly calculations
-            currentYear = new Date(startDate).getFullYear();
-            yearStart = new Date(startDate);
-            yearEnd = new Date(endDate);
+        if (!startDate || !endDate) {
+            start = moment().startOf('year');
+            end = moment().endOf('year');
+            isCurrentYearQuery = true;
         } else {
-            currentYear = new Date().getFullYear();
-            yearStart = new Date(currentYear, 0, 1);
-            yearEnd = new Date(currentYear, 11, 31);
-            matchCondition.startDate = { $gte: yearStart };
-            matchCondition.endDate = { $lte: yearEnd };
+            start = moment(startDate).startOf('day');
+            end = moment(endDate).endOf('day');
         }
 
-        const subscriptions = await Subscription.aggregate([
-            { $match: matchCondition },
-            {
-                $lookup: {
-                    from: 'plans',
-                    localField: 'plan',
-                    foreignField: '_id',
-                    as: 'planDetails'
-                }
-            },
-            { $unwind: '$planDetails' },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m", date: "$startDate" } },
-                    monthlyEarnings: { $sum: '$planDetails.price' }
-                }
-            },
-            { $sort: { _id: 1 } }
-        ]);
+        if (!start.isValid() || !end.isValid() || end.isBefore(start)) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Invalid date range'
+            });
+        }
+
+        const allSubscriptions = await Subscription.find({
+            clinisist: { $in: clinisistIds }
+        }).populate('plan', 'price');
 
         const monthlyEarnings = {};
-        
-        // Calculate months between start and end date
-        const startMonth = yearStart.getMonth();
-        const endMonth = yearEnd.getMonth();
-        const startYear = yearStart.getFullYear();
-        const endYear = yearEnd.getFullYear();
-        
-        // Initialize all months between start and end date
-        for (let year = startYear; year <= endYear; year++) {
-            const monthStart = year === startYear ? startMonth : 0;
-            const monthEnd = year === endYear ? endMonth : 11;
-            
-            for (let month = monthStart; month <= monthEnd; month++) {
-                const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
-                monthlyEarnings[monthKey] = 0;
-            }
-        }
+        let periodTotal = 0;
+        let allTimeTotal = 0;
 
-        subscriptions.forEach(sub => {
-            monthlyEarnings[sub._id] = sub.monthlyEarnings;
+        allSubscriptions.forEach(sub => {
+            const subStartDate = moment(sub.startDate);
+            const earnings = sub.plan.price;
+
+            // Calculate all-time total
+            allTimeTotal += earnings;
+
+            // Calculate period total and monthly earnings
+            if (subStartDate.isBetween(start, end, null, '[]')) {
+                periodTotal += earnings;
+
+                const monthKey = subStartDate.format('YYYY-MM');
+                if (!monthlyEarnings[monthKey]) {
+                    monthlyEarnings[monthKey] = 0;
+                }
+                monthlyEarnings[monthKey] += earnings;
+            }
         });
 
-        const totalEarnings = Object.values(monthlyEarnings).reduce((a, b) => a + b, 0);
-
-        // Calculate all-time earnings
-        const allTimeEarnings = await Subscription.aggregate([
-            { $match: { clinisist: { $in: clinisistIds } } },
-            {
-                $lookup: {
-                    from: 'plans',
-                    localField: 'plan',
-                    foreignField: '_id',
-                    as: 'planDetails'
-                }
-            },
-            { $unwind: '$planDetails' },
-            {
-                $group: {
-                    _id: null,
-                    totalEarnings: { $sum: '$planDetails.price' }
-                }
+        // Fill in months with zero earnings for the queried period
+        let currentMonth = start.clone().startOf('month');
+        while (currentMonth.isSameOrBefore(end, 'month')) {
+            const monthKey = currentMonth.format('YYYY-MM');
+            if (!monthlyEarnings[monthKey]) {
+                monthlyEarnings[monthKey] = 0;
             }
-        ]);
+            currentMonth.add(1, 'month');
+        }
+
+        // Sort monthly earnings
+        const sortedMonthlyEarnings = Object.fromEntries(
+            Object.entries(monthlyEarnings).sort(([a], [b]) => a.localeCompare(b))
+        );
+
+        const response = {
+            monthlyEarnings: sortedMonthlyEarnings,
+            periodTotal,
+            allTimeTotal
+        };
+
+        if (isCurrentYearQuery) {
+            response.currentYearTotal = periodTotal;
+        }
 
         res.status(200).json({
             status: 'success',
-            body: {
-                monthlyEarnings,
-                currentYearTotal: totalEarnings,
-                allTimeTotal: allTimeEarnings[0] ? allTimeEarnings[0].totalEarnings : 0
-            },
+            body: response,
             message: 'Subscription budget retrieved successfully'
         });
+
     } catch (error) {
         res.status(500).json({
             status: 'error',
