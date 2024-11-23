@@ -66,9 +66,7 @@ app.listen(PORT, () => {
     console.log(`app running on ${PORT}`);
 });
 
-//AWS_ACCESS_KEY_ID = AKIA5TZI3C6UQ7XJHPN6
-//AWS_SECRET_ACCESS_KEY = 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
-//AWS_REGION = us-east-1
+
 
 const cron = require('node-cron');
 const { checkAndUpdateExpiredSubscriptions } = require('./controllers/orgSubscription');
