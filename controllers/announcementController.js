@@ -87,18 +87,19 @@ exports.updateAnnouncement = async (req, res) => {
     try {
         const { id } = req.params;
         const { title, content, startDate, endDate } = req.body;
-        let media = null;
+        let updateData = { title, content, startDate, endDate };
 
         if (req.file) {
             const fileContent = req.file.buffer;
             const key = `announcements/${Date.now()}-${req.file.originalname}`;
             const mimeType = req.file.mimetype;
-            media = await uploadFile(fileContent, key, mimeType);
+            const media = await uploadFile(fileContent, key, mimeType);
+            updateData.media = media;
         }
 
         const announcement = await Announcement.findByIdAndUpdate(
             id,
-            { title, content, media, startDate, endDate },
+            updateData,
             { new: true }
         );
 
