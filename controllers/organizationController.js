@@ -53,7 +53,7 @@ const registerOrganization = async (req, res) => {
         await sendEmail(
             email,
             'Welcome to Our Platform',
-            `Hello ${name},\n\nYour organization has been successfully registered.\n\nThank you for joining us!\n\nBest Regards,\nYour Company Name`
+            `Hello ${name},\n\nYour organization has been successfully registered.\n\nThank you for joining us!\n\nBest Regards,\n Ifeelincolor`
         );
 
         // Respond with the new organization data

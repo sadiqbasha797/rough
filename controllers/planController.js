@@ -179,7 +179,22 @@ const getPortalPlans = async (req, res) => {
     }
 };
 
-
+const getOrganizationPlans = async (req, res) => {
+    try {
+        const organizationPlans = await Plan.find({ planType: 'organization-plan', status: 'Active' });
+        res.json({
+            status: "success",
+            body: organizationPlans,
+            message: "Organization plans retrieved successfully"
+        });
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: err.message
+        });
+    }
+};
 
 module.exports = {
     createPlan, 
@@ -189,5 +204,6 @@ module.exports = {
     showActivePlans,
     createPortalPlan,
     getDoctorPlans,
-    getPortalPlans
+    getPortalPlans,
+    getOrganizationPlans
 };

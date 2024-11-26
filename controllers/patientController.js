@@ -6,6 +6,8 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 const Subscription = require('../models/subscription');
+const Organization = require('../models/organization');
+const mongoose = require('mongoose');
 
 // Cloudinary configuration
 cloudinary.config({
@@ -378,7 +380,11 @@ const getNotifications = async (req, res) => {
 
 const getAllClinisists = async (req, res) => {
     try {
-        const clinisists = await Clinisist.find({});
+        const clinisists = await Clinisist.find({
+            organization: null,  // Only fetch clinicians with no organization
+            verified: 'yes',    // Ensure they are verified
+            Active: 'yes'       // Ensure they are active
+        }).select('-password -verificationToken -tokenExpiration -resetPasswordToken -resetPasswordExpires'); // Exclude sensitive fields
 
         const formattedClinisists = clinisists.map(clinisist => {
             return clinisist.toObject ? clinisist.toObject() : clinisist;
@@ -387,7 +393,7 @@ const getAllClinisists = async (req, res) => {
         res.status(200).json({
             status: "success",
             body: formattedClinisists,
-            message: "All clinicians retrieved successfully"
+            message: "Independent clinicians retrieved successfully"
         });
     } catch (err) {
         console.error(err.message);
@@ -428,8 +434,88 @@ const getClinisistById = async (req, res) => {
     }
 };
 
+const getAllOrganizations = async (req, res) => {
+    try {
+        const organizations = await Organization.find({ active: true })
+            .select('-password -otp -otpExpires');
 
+        if (!organizations || organizations.length === 0) {
+            return res.status(200).json({
+                status: "success",
+                body: [],
+                message: "No organizations available"
+            });
+        }
 
+        const formattedOrganizations = organizations.map(org => {
+            return org.toObject ? org.toObject() : org;
+        });
+
+        res.status(200).json({
+            status: "success",
+            body: formattedOrganizations,
+            message: "All organizations retrieved successfully"
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "Failed to retrieve organizations"
+        });
+    }
+};
+
+const getOrganizationDoctors = async (req, res) => {
+    try {
+        const { organizationId } = req.params;
+
+        // Validate organizationId
+        if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+            return res.status(400).json({
+                status: "error",
+                body: null,
+                message: "Invalid organization ID"
+            });
+        }
+
+        // Find all clinicians belonging to the specified organization
+        const doctors = await Clinisist.find({ 
+            organization: organizationId,
+            Active: 'yes'
+        })
+        .select('-password -verificationToken -tokenExpiration -resetPasswordToken -resetPasswordExpires')
+        .populate('organization', 'name');
+
+        // Log for debugging
+        console.log(`Found ${doctors.length} doctors for organization ${organizationId}`);
+
+        if (!doctors || doctors.length === 0) {
+            return res.status(200).json({
+                status: "success",
+                body: [],
+                message: "No doctors available under this organization"
+            });
+        }
+
+        const formattedDoctors = doctors.map(doctor => {
+            return doctor.toObject ? doctor.toObject() : doctor;
+        });
+
+        res.status(200).json({
+            status: "success",
+            body: formattedDoctors,
+            message: "Organization doctors retrieved successfully"
+        });
+    } catch (err) {
+        console.error('Error in getOrganizationDoctors:', err.message);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "Failed to retrieve organization doctors"
+        });
+    }
+};
 
 module.exports = {
     getAllClinisists,
@@ -441,7 +527,7 @@ module.exports = {
     getNearestDoctors,
     updatePatient,
     getNotifications,
-   // updatePatientImage,
-    //upload,
-    deletePatientImage
+    deletePatientImage,
+    getAllOrganizations,
+    getOrganizationDoctors
 };
