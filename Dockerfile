@@ -1,10 +1,20 @@
-FROM node:lts-alpine
-ENV NODE_ENV=production
+# Use Node.js LTS (Long Term Support) image as base
+FROM node:20-slim
+
+# Create app directory
 WORKDIR /usr/src/app
-COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
-RUN npm install --production --silent && mv node_modules ../
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Copy app source code
 COPY . .
+
+# Expose port (matches your index.js PORT)
 EXPOSE 3000
-RUN chown -R node /usr/src/app
-USER node
+
+# Start the application
 CMD ["node", "index.js"]

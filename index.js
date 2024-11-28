@@ -26,7 +26,8 @@ const clinicianSubRoutes = require('./routes/clinisistSubRoutes');
 const clinicistPlanRoutes = require('./routes/clinicistPlanRoutes');
 const assistantRoutes = require('./routes/assistantRoutes');
 const faqRoutes = require('./routes/faqRoutes');
-const announcementRoutes = require('./routes/announcementRoutes');      
+const announcementRoutes = require('./routes/announcementRoutes');     
+const paymentRoutes = require('./routes/paymentRoutes');
 dotenv.config();
 connectDB();
 
@@ -60,6 +61,7 @@ app.use('/api/clinicistPlan', clinicistPlanRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/faq', faqRoutes);
 app.use('/api/announcement', announcementRoutes);
+app.use('/api/payment', paymentRoutes);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
