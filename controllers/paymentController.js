@@ -7,7 +7,7 @@ const paymentController = {
       const { amount, currency = 'usd', email } = req.body;
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount, // Convert to cents
+        amount: amount * 100, // Convert to cents
         currency: currency,
         receipt_email: email, // Store email in the payment
       });
