@@ -393,36 +393,25 @@ const deletePortalPlan = async (req, res) => {
 
 const getPortalPlanSubscriptions = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
-        let dateFilter = {};
+        // First, get all portal plan IDs
+        const portalPlanIds = await Plan.find({ planType: 'portal-plan' }).distinct('_id');
+        console.log('Portal Plan IDs:', portalPlanIds); // Debug log
 
-        if (startDate && endDate) {
-            dateFilter = {
-                startDate: { $gte: new Date(startDate) },
-                endDate: { $lte: new Date(endDate) }
-            };
-        } else {
-            const currentYear = new Date().getFullYear();
-            dateFilter = {
-                startDate: { $gte: new Date(currentYear, 0, 1) },
-                endDate: { $lte: new Date(currentYear, 11, 31) }
-            };
-        }
-
+        // Get all subscriptions for portal plans without date filtering
         const subscriptions = await Subscription.find({
-            ...dateFilter,
-            plan: { $in: await Plan.find({ planType: 'portal-plan' }).distinct('_id') }
+            plan: { $in: portalPlanIds }
         })
-        .populate('patient') // Populate patient details
+        .populate('patient') 
         .populate('plan')
         .sort({ startDate: -1 });
+
+        console.log('Found subscriptions count:', subscriptions.length); // Debug log
 
         res.status(200).json({
             status: 'success',
             body: subscriptions,
             count: subscriptions.length,
             message: 'Portal plan subscriptions retrieved successfully',
-           
         });
     } catch (error) {
         console.error('Error fetching portal plan subscriptions:', error);
@@ -914,29 +903,19 @@ const getAllAssessmentInfos = async (req, res) => {
 
 const getDoctorPlanSubscriptions = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
-        let dateFilter = {};
+        // First, get all doctor plan IDs
+        const doctorPlanIds = await Plan.find({ planType: 'doctor-plan' }).distinct('_id');
+        console.log('Doctor Plan IDs:', doctorPlanIds); // Debug log
 
-        if (startDate && endDate) {
-            dateFilter = {
-                startDate: { $gte: new Date(startDate) },
-                endDate: { $lte: new Date(endDate) }
-            };
-        } else {
-            const currentYear = new Date().getFullYear();
-            dateFilter = {
-                startDate: { $gte: new Date(currentYear, 0, 1) },
-                endDate: { $lte: new Date(currentYear, 11, 31) }
-            };
-        }
-
+        // Get all subscriptions for doctor plans
         const subscriptions = await Subscription.find({
-            ...dateFilter,
-            plan: { $in: await Plan.find({ planType: 'doctor-plan' }).distinct('_id') }
+            plan: { $in: doctorPlanIds }
         })
-        .populate('clinisist', 'name email') // Populate clinician details
+        .populate('clinisist') // Populate clinician details
         .populate('plan')
         .sort({ startDate: -1 });
+
+        console.log('Found subscriptions count:', subscriptions.length); // Debug log
 
         res.status(200).json({
             status: 'success',
