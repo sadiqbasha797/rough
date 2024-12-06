@@ -44,7 +44,8 @@ const registerAssistant = async (req, res) => {
                     clinicianSubscription: false,
                     organizationSubscription: false,
                     assessments: false,
-                    announcements: false
+                    announcements: false,
+                    payments: false
                 }
             });
 
@@ -403,7 +404,8 @@ const updateAssistantPermissions = async (req, res) => {
                     clinicianSubscription: Boolean(permissions.clinicianSubscription),
                     organizationSubscription: Boolean(permissions.organizationSubscription),
                     assessments: Boolean(permissions.assessments),
-                    announcements: Boolean(permissions.announcements)
+                    announcements: Boolean(permissions.announcements),
+                    payments: Boolean(permissions.payments)
                 }
             },
             { new: true }
@@ -441,10 +443,10 @@ const getAssistantPermissions = async (req, res) => {
         const permissions = await AssistantPermission.findOne({ assistantId });
 
         if (!permissions) {
-            return res.status(404).json({
-                status: 'error',
+            return res.status(200).json({
+                status: 'success',
                 body: null,
-                message: 'Permissions not found for this assistant'
+                message: 'No permissions found for this assistant'
             });
         }
 

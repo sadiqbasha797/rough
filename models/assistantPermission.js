@@ -59,6 +59,10 @@ const assistantPermissionSchema = new mongoose.Schema({
         announcements: {
             type: Boolean,
             default: false
+        },
+        payments : {
+            type: Boolean,
+            default: false
         }
     }
 }, {

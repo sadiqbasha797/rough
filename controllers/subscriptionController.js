@@ -238,11 +238,21 @@ const getSubscribedClinicians = async (req, res) => {
             });
         }
 
-        // Format the response data
-        const response = subscriptions.map(subscription => ({
-            plan: subscription.plan,
-            clinician: subscription.clinisist
-        }));
+        // Filter out subscriptions with null clinicians and format the response data
+        const response = subscriptions
+            .filter(subscription => subscription.clinisist !== null)
+            .map(subscription => ({
+                plan: subscription.plan,
+                clinician: subscription.clinisist
+            }));
+
+        if (response.length === 0) {
+            return res.json({
+                status: 'success',
+                body: [],
+                message: 'No subscribed clinicians found'
+            });
+        }
 
         res.json({
             status: 'success',
