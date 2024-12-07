@@ -886,6 +886,37 @@ const getClinicistRecommendationsAndPatients = async (req, res) => {
     }
 };
 
+const getClinisistById = async (req, res) => {
+    try {
+        const clinisist = await Clinisist.findById(req.params.id)
+            .select('-password -verificationToken -tokenExpiration -resetPasswordToken -resetPasswordExpires');
+
+        if (!clinisist) {
+            return res.status(404).json({
+                status: "error", 
+                body: null,
+                message: "Clinician not found"
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            body: clinisist,
+            message: "Clinician retrieved successfully"
+        });
+
+    } catch (error) {
+        console.error('Error fetching clinician:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "Failed to retrieve clinician",
+            error: error.message
+        });
+    }
+};
+
+
 module.exports = {
     getClinisistProfile,
     updatePassword,
@@ -903,4 +934,5 @@ module.exports = {
     getClinicistRecommendationStats,
     getNearbySubscribedPatientsAssessments,
     getClinicistRecommendationsAndPatients,
+    getClinisistById
 };

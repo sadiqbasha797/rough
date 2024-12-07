@@ -517,6 +517,95 @@ const getOrganizationDoctors = async (req, res) => {
     }
 };
 
+const updatePatientByAdmin = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const updateData = req.body;
+
+        // Validate patientId
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            return res.status(400).json({
+                status: "error",
+                body: null,
+                message: "Invalid patient ID"
+            });
+        }
+
+        // Find and update patient
+        const updatedPatient = await Patient.findByIdAndUpdate(
+            patientId,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password -verificationToken -tokenExpiration -resetPasswordToken -resetPasswordExpires');
+
+        if (!updatedPatient) {
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Patient not found"
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            body: updatedPatient,
+            message: "Patient updated successfully"
+        });
+
+    } catch (error) {
+        console.error('Error in updatePatientByAdmin:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "Failed to update patient",
+            error: error.message
+        });
+    }
+};
+
+const deletePatientByAdmin = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+
+        // Validate patientId
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            return res.status(400).json({
+                status: "error",
+                body: null,
+                message: "Invalid patient ID"
+            });
+        }
+
+        // Find and delete patient
+        const deletedPatient = await Patient.findByIdAndDelete(patientId);
+
+        if (!deletedPatient) {
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Patient not found"
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            body: null,
+            message: "Patient deleted successfully"
+        });
+
+    } catch (error) {
+        console.error('Error in deletePatientByAdmin:', error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: "Failed to delete patient",
+            error: error.message
+        });
+    }
+};
+
+
+
 module.exports = {
     getAllClinisists,
     getClinisistById,
@@ -529,5 +618,7 @@ module.exports = {
     getNotifications,
     deletePatientImage,
     getAllOrganizations,
-    getOrganizationDoctors
+    getOrganizationDoctors,
+    updatePatientByAdmin,
+    deletePatientByAdmin
 };

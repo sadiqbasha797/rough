@@ -50,6 +50,7 @@ const {
  } = require('../controllers/adminController');
 const {createPortalPlan, createPlan} = require('../controllers/planController');
 const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
+const {getClinisistById} = require('../controllers/clinisistController');
 const fileUpload = require('express-fileupload');
 require('../config/passport');
 
@@ -88,6 +89,7 @@ router.get('/doctors', adminAuth, getPortalClinicians);
 router.put('/doctors/:id', adminAuth, updatePortalClinician);
 router.delete('/doctors/:id', adminAuth, deletePortalClinician);
 router.get('/doctors-counts', adminAuth, getPortalClinicianCounts);
+router.get('/doctors/:id', adminAuth, getClinisistById);
 
 router.get('/patient-assessments', adminAuth, getPortalPlanPatientAssessments);
 router.get('/all-assessments', adminAuth, getAllAssessmentInfos);

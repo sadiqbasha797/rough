@@ -268,10 +268,56 @@ const getSubscribedClinicians = async (req, res) => {
     }
 };
 
+const checkActiveSubscription = async (req, res) => {
+    try {
+        const patientId = req.patient._id;
+        const currentDate = new Date();
+
+        // Find any active subscription for the patient
+        const activeSubscription = await Subscription.findOne({
+            patient: patientId,
+            startDate: { $lte: currentDate },
+            endDate: { $gte: currentDate }
+        }).populate('plan');
+
+        if (!activeSubscription) {
+            return res.status(200).json({
+                status: 'success',
+                body: {
+                    hasActiveSubscription: false
+                },
+                message: 'No active subscription found'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                hasActiveSubscription: true,
+                subscription: {
+                    plan: activeSubscription.plan,
+                    startDate: activeSubscription.startDate,
+                    endDate: activeSubscription.endDate,
+                    renewal: activeSubscription.renewal
+                }
+            },
+            message: 'Active subscription found'
+        });
+
+    } catch (error) {
+        console.error('Error checking active subscription:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error checking subscription status'
+        });
+    }
+};
 
 
 module.exports = {
     createSubscription, 
     getSubscriptionByPatient, 
-    getSubscribedClinicians
+    getSubscribedClinicians,
+    checkActiveSubscription
 };

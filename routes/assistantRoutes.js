@@ -46,6 +46,7 @@ const {
         getDetailedEarningsMonthWise
     } = require('../controllers/adminController');
 const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
+const {getClinisistById} = require('../controllers/clinisistController');
 
 // Public routes
 router.post('/register', registerAssistant);
@@ -82,6 +83,7 @@ router.get('/doctors', assistantAuth, getPortalClinicians);
 router.put('/doctors/:id', assistantAuth, updatePortalClinician);
 router.delete('/doctors/:id', assistantAuth, deletePortalClinician);
 router.get('/doctors-counts', assistantAuth, getPortalClinicianCounts);
+router.get('/doctors/:id', assistantAuth, getClinisistById);
 
 router.get('/patient-assessments', assistantAuth, getPortalPlanPatientAssessments);
 router.get('/all-assessments', assistantAuth, getAllAssessmentInfos);
