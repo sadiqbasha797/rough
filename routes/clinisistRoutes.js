@@ -19,7 +19,7 @@ const {
 } = require('../controllers/clinisistController'); // Adjust the path as needed
 const { clincistProtect } = require('../middleware/auth'); // Middleware to protect routes
 const { createPlan, updatePlan, getPlansByClincist, deletePlan } = require('../controllers/planController');
-
+const { checkClinicistActiveSubscription } = require('../controllers/subscriptionController');
 const router = express.Router();
 
 router.get('/profile', clincistProtect, getClinisistProfile);
@@ -41,4 +41,5 @@ router.route('/sales-stats').get(clincistProtect, getClinicistSalesStats);
 router.route('/recommendation-stats').get(clincistProtect, getClinicistRecommendationStats);
 router.route('/nearby-subscribed-patients-assessments').post(clincistProtect, getNearbySubscribedPatientsAssessments);
 router.route('/recommended-patients').get(clincistProtect, getClinicistRecommendationsAndPatients);
+router.route('/check-active-subscription').get(clincistProtect, checkClinicistActiveSubscription);
 module.exports = router;

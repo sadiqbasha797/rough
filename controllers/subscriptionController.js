@@ -3,7 +3,7 @@ const Plan = require('../models/plan');
 const createNotification = require('../utils/createNotification');
 const Clinisist = require('../models/Clinisist');
 const patient = require('../models/patient');
-
+const ClinicianSubscription = require('../models/clinisistSubscription');
 const createSubscription = async (req, res) => {
     const { planId } = req.params;
     const { clinisistId } = req.body; // New input for organization plans
@@ -314,10 +314,62 @@ const checkActiveSubscription = async (req, res) => {
     }
 };
 
+const checkClinicistActiveSubscription = async (req, res) => {
+    try {
+        const clinicistId = req.clinisist._id;
+        const currentDate = new Date();
+
+        // Find any active subscription for the clinician
+        const activeSubscription = await ClinicianSubscription.findOne({
+            clinician: clinicistId,
+            startDate: { $lte: currentDate },
+            endDate: { $gte: currentDate },
+            active: true
+        });
+
+        if (!activeSubscription) {
+            return res.status(200).json({
+                status: 'success',
+                body: {
+                    hasActiveSubscription: false
+                },
+                message: 'No active subscription found'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success', 
+            body: {
+                hasActiveSubscription: true,
+                subscription: {
+                    patients: activeSubscription.patients,
+                    price: activeSubscription.price,
+                    startDate: activeSubscription.startDate,
+                    endDate: activeSubscription.endDate,
+                    validity: activeSubscription.validity,
+                    renewal: activeSubscription.renewal,
+                    description: activeSubscription.description
+                }
+            },
+            message: 'Active subscription found'
+        });
+
+    } catch (error) {
+        console.error('Error checking clinician active subscription:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error checking subscription status'
+        });
+    }
+};
+
+
 
 module.exports = {
     createSubscription, 
     getSubscriptionByPatient, 
     getSubscribedClinicians,
-    checkActiveSubscription
+    checkActiveSubscription,
+    checkClinicistActiveSubscription
 };
