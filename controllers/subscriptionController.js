@@ -273,9 +273,11 @@ const checkActiveSubscription = async (req, res) => {
         const patientId = req.patient._id;
         const currentDate = new Date();
 
-        // Find any active subscription for the patient
+        // Find any active subscription for the patient, excluding clinisist and organization subscriptions
         const activeSubscription = await Subscription.findOne({
             patient: patientId,
+            clinisist: null,
+            organization: null,
             startDate: { $lte: currentDate },
             endDate: { $gte: currentDate }
         }).populate('plan');
@@ -367,13 +369,12 @@ const checkClinicistActiveSubscription = async (req, res) => {
 const checkPatientClinicistSubscription = async (req, res) => {
     try {
         const patientId = req.patient._id;
-        const { clinicistId } = req.params;
         const currentDate = new Date();
 
-        // Find any active subscription for the patient with this clinicist
+        // Find any active subscription for the patient with any clinicist
         const activeSubscription = await Subscription.findOne({
             patient: patientId,
-            clinisist: clinicistId,
+            clinisist: { $ne: null }, // Check for any clinicist subscription
             startDate: { $lte: currentDate },
             endDate: { $gte: currentDate }
         });
@@ -384,7 +385,7 @@ const checkPatientClinicistSubscription = async (req, res) => {
                 body: {
                     hasActiveSubscription: false
                 },
-                message: 'No active subscription found with this clinician'
+                message: 'No active subscription found with any clinician'
             });
         }
 
@@ -403,7 +404,7 @@ const checkPatientClinicistSubscription = async (req, res) => {
                     renewal: activeSubscription.renewal
                 }
             },
-            message: 'Active subscription found with this clinician'
+            message: 'Active subscription found with a clinician'
         });
 
     } catch (error) {

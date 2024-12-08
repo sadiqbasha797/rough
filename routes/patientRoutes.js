@@ -34,7 +34,7 @@ router.get('/history', getFixedQuestions);
 router.get('/info',patientProtect, getPatientInfo);
 router.get('/subscribed-doctors', patientProtect, getSubscribedClinicians);
 router.get('/check-active-subscription', patientProtect, checkActiveSubscription);
-router.get('/check-patient-clinicist-subscription/:clinicistId', patientProtect, checkPatientClinicistSubscription);
+router.get('/check-patient-clinicist-subscription', patientProtect, checkPatientClinicistSubscription);
 router.post('/alert', patientProtect, createAlert);
 router.put('/change-password', patientProtect, changePassword);
 router.post('/mood-assessment', patientProtect, validateAndStoreAssessment);
