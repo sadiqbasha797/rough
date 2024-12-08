@@ -364,6 +364,57 @@ const checkClinicistActiveSubscription = async (req, res) => {
     }
 };
 
+const checkPatientClinicistSubscription = async (req, res) => {
+    try {
+        const patientId = req.patient._id;
+        const { clinicistId } = req.params;
+        const currentDate = new Date();
+
+        // Find any active subscription for the patient with this clinicist
+        const activeSubscription = await Subscription.findOne({
+            patient: patientId,
+            clinisist: clinicistId,
+            startDate: { $lte: currentDate },
+            endDate: { $gte: currentDate }
+        });
+
+        if (!activeSubscription) {
+            return res.status(200).json({
+                status: 'success',
+                body: {
+                    hasActiveSubscription: false
+                },
+                message: 'No active subscription found with this clinician'
+            });
+        }
+
+        // Get plan details
+        const plan = await Plan.findById(activeSubscription.plan);
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                hasActiveSubscription: true,
+                subscription: {
+                    startDate: activeSubscription.startDate,
+                    endDate: activeSubscription.endDate,
+                    planName: plan.name,
+                    planValidity: plan.validity,
+                    renewal: activeSubscription.renewal
+                }
+            },
+            message: 'Active subscription found with this clinician'
+        });
+
+    } catch (error) {
+        console.error('Error checking patient-clinician subscription:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error checking subscription status'
+        });
+    }
+};
 
 
 module.exports = {
@@ -371,5 +422,6 @@ module.exports = {
     getSubscriptionByPatient, 
     getSubscribedClinicians,
     checkActiveSubscription,
-    checkClinicistActiveSubscription
+    checkClinicistActiveSubscription,
+    checkPatientClinicistSubscription
 };
