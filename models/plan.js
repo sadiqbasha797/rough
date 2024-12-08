@@ -27,7 +27,7 @@ const planSchema = new mongoose.Schema({
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Clinisist',
-        required: true,
+        required: false,
     },
     planType: { // Adding planType field with specific allowed values
         type: String,

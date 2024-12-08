@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const clinicistPlanSchema = new mongoose.Schema({
-    planName: {
+    name: {
         type: String,
         required: true,
         trim: true
@@ -11,7 +11,7 @@ const clinicistPlanSchema = new mongoose.Schema({
         required: true,
         min: 0
     },
-    description: {
+    details: {
         type: String,
         required: true,
         trim: true
