@@ -378,53 +378,45 @@ const getMonthlyClinicianSubscriptionStats = async (req, res) => {
 // Get subscriptions for a specific clinician
 const getClinicianSubscriptions = async (req, res) => {
     try {
-        const clinicianId = req.clinisist._id;
-
-        const subscriptions = await ClinicianSubscription.find({
-            clinician: clinicianId
+        // Find subscriptions for the clinician and populate plan data
+        const subscriptions = await ClinicianSubscription.find({ 
+            clinician: req.clinisist._id 
         })
-        .populate('clinician')
-        .populate({
-            path: 'plan',
-            model: 'ClinicistPlan',
-            select: 'name price details validity active'
-        })
-        .sort({ createdAt: -1 });
+        .populate('plan')
+        .populate('clinician');
 
-        if (subscriptions.length === 0) {
-            return res.status(200).json({
-                status: 'success',
+        if (!subscriptions || subscriptions.length === 0) {
+            return res.json({
+                status: "success",
                 body: [],
-                message: 'No subscriptions found for this clinician'
+                message: "No subscriptions found"
             });
         }
 
-        const formattedSubscriptions = subscriptions.map(subscription => ({
-            _id: subscription._id,
-            patients: subscription.patients,
-            price: subscription.price,
-            startDate: subscription.startDate,
-            endDate: subscription.endDate,
-            validity: subscription.validity,
-            renewal: subscription.renewal,
-            description: subscription.description,
-            active: subscription.active,
-            plan: subscription.plan,
-            createdAt: subscription.createdAt,
-            updatedAt: subscription.updatedAt
-        }));
+        // Map through subscriptions to format response
+        const formattedSubscriptions = subscriptions.map(sub => {
+            const subscription = sub.toObject();
+            
+            // Add clinician name if clinician exists
+            if (subscription.clinician) {
+                subscription.clinicianName = subscription.clinician.name;
+            } else {
+                subscription.clinicianName = null;
+            }
 
-        res.status(200).json({
-            status: 'success',
-            body: formattedSubscriptions,
-            message: 'Clinician subscriptions retrieved successfully'
+            return subscription;
         });
 
-    } catch (error) {
+        res.json({
+            status: "success", 
+            body: formattedSubscriptions,
+            message: "Subscriptions retrieved successfully"
+        });
+    } catch (err) {
         res.status(500).json({
-            status: 'error',
+            status: "error",
             body: null,
-            message: error.message
+            message: err.message
         });
     }
 };
