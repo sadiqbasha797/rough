@@ -40,6 +40,7 @@ const createClinicianSubscription = async (req, res) => {
             subscription.endDate = endDate;
             subscription.validity = plan.validity;
             subscription.renewal = true;
+            subscription.plan = plan._id;
             isRenewal = true;
         } else {
             subscription = new ClinicianSubscription({
@@ -48,7 +49,8 @@ const createClinicianSubscription = async (req, res) => {
                 startDate,
                 endDate,
                 validity: plan.validity,
-                renewal: false
+                renewal: false,
+                plan: plan._id
             });
         }
 
@@ -373,6 +375,62 @@ const getMonthlyClinicianSubscriptionStats = async (req, res) => {
     }
 };
 
+// Get subscriptions for a specific clinician
+const getClinicianSubscriptions = async (req, res) => {
+    try {
+        const clinicianId = req.clinisist._id;
+
+        const subscriptions = await ClinicianSubscription.find({
+            clinician: clinicianId
+        })
+        .populate('clinician')
+        .populate({
+            path: 'plan',
+            model: 'ClinicistPlan',
+            select: 'name price details validity active'
+        })
+        .sort({ createdAt: -1 });
+
+        if (subscriptions.length === 0) {
+            return res.status(200).json({
+                status: 'success',
+                body: [],
+                message: 'No subscriptions found for this clinician'
+            });
+        }
+
+        const formattedSubscriptions = subscriptions.map(subscription => ({
+            _id: subscription._id,
+            patients: subscription.patients,
+            price: subscription.price,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            validity: subscription.validity,
+            renewal: subscription.renewal,
+            description: subscription.description,
+            active: subscription.active,
+            plan: subscription.plan,
+            createdAt: subscription.createdAt,
+            updatedAt: subscription.updatedAt
+        }));
+
+        res.status(200).json({
+            status: 'success',
+            body: formattedSubscriptions,
+            message: 'Clinician subscriptions retrieved successfully'
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: error.message
+        });
+    }
+};
+
+
+
 module.exports = {
     createClinicianSubscription,
     getAllClinicianSubscriptions,
@@ -382,5 +440,6 @@ module.exports = {
     checkAndUpdateExpiredSubscriptions,
     manualCheckExpiredSubscriptions,
     getClinicianSubscriptionCounts,
-    getMonthlyClinicianSubscriptionStats
+    getMonthlyClinicianSubscriptionStats,
+    getClinicianSubscriptions
 };

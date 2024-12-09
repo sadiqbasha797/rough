@@ -40,6 +40,11 @@
         active: {
             type: Boolean,
             default: true
+        },
+        plan: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'ClinicistPlan',
+            required: true
         }
     }, {
         timestamps: true
