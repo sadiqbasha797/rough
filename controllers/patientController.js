@@ -605,6 +605,86 @@ const deletePatientByAdmin = async (req, res) => {
 };
 
 
+const getPatientJoinedStats = async (req, res) => {
+    try {
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1;
+
+        // Get current month patients
+        const currentMonthPatients = await Patient.countDocuments({
+            createdAt: {
+                $gte: new Date(currentYear, currentMonth - 1, 1),
+                $lte: new Date(currentYear, currentMonth, 0)
+            }
+        });
+
+        // Get current year patients
+        const currentYearPatients = await Patient.countDocuments({
+            createdAt: {
+                $gte: new Date(currentYear, 0, 1),
+                $lte: new Date(currentYear, 11, 31)
+            }
+        });
+
+        // Get total patients
+        const totalPatients = await Patient.countDocuments();
+
+        // Get month-wise data for current year
+        const monthlyData = await Patient.aggregate([
+            {
+                $match: {
+                    createdAt: {
+                        $gte: new Date(currentYear, 0, 1),
+                        $lte: new Date(currentYear, 11, 31)
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: { $month: "$createdAt" },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            }
+        ]);
+
+        // Format monthly data
+        const formattedMonthlyData = {};
+        for (let i = 1; i <= 12; i++) {
+            const monthStr = i.toString().padStart(2, '0');
+            formattedMonthlyData[`${currentYear}-${monthStr}`] = 0;
+        }
+
+        monthlyData.forEach(data => {
+            const monthStr = data._id.toString().padStart(2, '0');
+            formattedMonthlyData[`${currentYear}-${monthStr}`] = data.count;
+        });
+
+        res.status(200).json({
+            status: 'success',
+            body: {
+                currentMonthPatients,
+                currentYearPatients,
+                totalPatients,
+                monthlyData: formattedMonthlyData
+            },
+            message: 'Patient statistics retrieved successfully'
+        });
+
+    } catch (error) {
+        console.error('Error fetching patient statistics:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Failed to fetch patient statistics',
+            error: error.message
+        });
+    }
+};
+
 
 module.exports = {
     getAllClinisists,
@@ -620,5 +700,6 @@ module.exports = {
     getAllOrganizations,
     getOrganizationDoctors,
     updatePatientByAdmin,
-    deletePatientByAdmin
+    deletePatientByAdmin,
+    getPatientJoinedStats
 };

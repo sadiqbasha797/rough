@@ -25,6 +25,11 @@ const clinicistPlanSchema = new mongoose.Schema({
     active: {
         type: Boolean,
         default: true
+    },
+    planType: {
+        type: String,
+        required: true,
+        enum: ['monthly', 'yearly','quarterly']
     }
 }, {
     timestamps: true

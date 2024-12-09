@@ -1,5 +1,5 @@
 const express = require('express');
-const {deletePatientImage,getAllClinisists,getClinisistById,getPatientProfile, updatePassword, updateUserName, deletePatient,getNearestDoctors,updatePatient,getNotifications,getAllOrganizations,getOrganizationDoctors,updatePatientByAdmin,deletePatientByAdmin} = require('../controllers/patientController');
+const {deletePatientImage,getAllClinisists,getClinisistById,getPatientProfile, updatePassword, updateUserName, deletePatient,getNearestDoctors,updatePatient,getNotifications,getAllOrganizations,getOrganizationDoctors,updatePatientByAdmin,deletePatientByAdmin,getPatientJoinedStats} = require('../controllers/patientController');
 const {patientProtect} = require('../middleware/auth');
 const {showActivePlans, getDoctorPlans, getPortalPlans, getOrganizationPlans} = require('../controllers/planController');
 const { createSubscription, getSubscriptionByPatient, getSubscribedClinicians, checkActiveSubscription, checkPatientClinicistSubscription } = require('../controllers/subscriptionController');
@@ -39,4 +39,5 @@ router.post('/alert', patientProtect, createAlert);
 router.put('/change-password', patientProtect, changePassword);
 router.post('/mood-assessment', patientProtect, validateAndStoreAssessment);
 router.get('/mood-assessment/:type', patientProtect, getQuestionsByType);
+router.get('/join-stats', getPatientJoinedStats);
 module.exports = router;

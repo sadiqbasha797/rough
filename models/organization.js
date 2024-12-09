@@ -50,6 +50,10 @@ const organizationSchema = new mongoose.Schema({
     mobile: {
         type: String,
     },
+    certificate: {
+        type: String,
+        default: null
+    },
     socialProfile: {
         instagram: {
             type: String,
