@@ -9,7 +9,7 @@ const upload = multer({ storage: storage });
 // Create an assessment
 const createAssessment = async (req, res) => {
     try {
-        const { question, answer, type, score, mcqOptions, category } = req.body;
+        const { question, answer, type, score, mcqOptions, category, video } = req.body;
 
         // Handle media upload if a file is present
         let mediaUrl = null;
@@ -27,7 +27,8 @@ const createAssessment = async (req, res) => {
             type,
             score,
             category,
-            mcqOptions: type === 'mcq' ? mcqOptions : []
+            mcqOptions: type === 'mcq' ? mcqOptions : [],
+            video: video
         });
 
         await newAssessment.save();

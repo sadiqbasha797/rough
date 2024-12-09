@@ -685,6 +685,37 @@ const getPatientJoinedStats = async (req, res) => {
     }
 };
 
+const getPatientById = async (req, res) => {
+    try {
+        const patientId = req.params.id;
+
+        const patient = await Patient.findById(patientId);
+
+        if (!patient) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Patient not found'
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            body: patient,
+            message: 'Patient retrieved successfully'
+        });
+
+    } catch (error) {
+        console.error('Error fetching patient:', error);
+        res.status(500).json({
+            status: 'error', 
+            body: null,
+            message: 'Error fetching patient',
+            error: error.message
+        });
+    }
+};
+
 
 module.exports = {
     getAllClinisists,
@@ -701,5 +732,6 @@ module.exports = {
     getOrganizationDoctors,
     updatePatientByAdmin,
     deletePatientByAdmin,
-    getPatientJoinedStats
+    getPatientJoinedStats,
+    getPatientById
 };

@@ -27,6 +27,7 @@ const {
     getNotifications,
     updateOrganizationImage,
     updateOrganizationData,
+    updateOrganizationCertificate
  } = require('../controllers/organizationController');
 
  const {
@@ -77,4 +78,5 @@ router.delete('/manager/:managerId', authOrganization, deleteManager);
 router.get('/notifications', authOrganization, getNotifications);
 router.put('/update-image', authOrganization, upload.single('image'), updateOrganizationImage);
 router.put('/update-data', authOrganization, updateOrganizationData);
+router.put('/update-certificate', authOrganization, upload.single('certificate'), updateOrganizationCertificate);
 module.exports = router;

@@ -28,6 +28,10 @@ const assessmentSchema = new mongoose.Schema({
         type: String,
         default: null,
     },
+    video: {
+        type: String,
+        default: null,
+    },
     mcqOptions: [{
         text: { type: String, required: false },
         isCorrect: { type: Boolean, required: false, default: false }

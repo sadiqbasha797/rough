@@ -1082,6 +1082,60 @@ const updateOrganizationData = async (req, res) => {
 };
 
 
+const updateOrganizationCertificate = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'No certificate file provided'
+            });
+        }
+
+        const organizationId = req.organization._id;
+        const organization = await Organization.findById(organizationId);
+
+        if (!organization) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Organization not found'
+            });
+        }
+
+        // Delete old certificate if it exists
+        if (organization.certificate) {
+            const oldCertificateKey = organization.certificate.split('/').pop();
+            await deleteFile(oldCertificateKey);
+        }
+
+        // Upload new certificate
+        const fileContent = req.file.buffer;
+        const fileName = `org_certificate_${organizationId}_${Date.now()}_${req.file.originalname}`;
+        const mimeType = req.file.mimetype;
+
+        const certificateUrl = await uploadFile(fileContent, fileName, mimeType);
+
+        // Update organization with new certificate URL
+        organization.certificate = certificateUrl;
+        await organization.save();
+
+        res.json({
+            status: 'success',
+            body: { certificateUrl },
+            message: 'Organization certificate updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating organization certificate:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error updating organization certificate'
+        });
+    }
+};
+
+
 module.exports = {
     getClinisistsByOrganization,
     registerOrganization,
@@ -1109,4 +1163,5 @@ module.exports = {
     getNotifications,
     updateOrganizationImage,
     updateOrganizationData,
+    updateOrganizationCertificate
 };
