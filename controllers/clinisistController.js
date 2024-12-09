@@ -195,29 +195,15 @@ const deleteClinisist = async (req, res) => {
 
 const getNotifications = async (req, res) => {
     try {
-        let notifications = await Notification.find({
+        const notifications = await Notification.find({
             'recipient.id': req.clinisist._id,
             'recipient.model': 'Clinisist'
-        }).sort({ createdAt: -1 });
-
-        // Populate recipient and sender details for subscription notifications
-        notifications = await Promise.all(notifications.map(async (notification) => {
-            if (notification.type === 'subscription') {
-                const recipient = await Clinisist.findById(notification.recipient.id).select('name email');
-                const sender = await Patient.findById(notification.sender.id).select('userName email');
-                return {
-                    ...notification.toObject(),
-                    recipient,
-                    sender
-                };
-            }
-            return notification;
-        }));
+        }).sort({ createdAt: -1 }); // Sort by most recent first
 
         res.status(200).json({
             status: "success",
             body: notifications,
-            message: "Notifications fetched successfully"
+            message: "Notifications retrieved successfully"
         });
     } catch (error) {
         console.error(error);
