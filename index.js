@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const passport = require('passport');
 const authRoutes = require('./routes/authRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const bodyParser = require('body-parser');
@@ -29,7 +30,6 @@ const announcementRoutes = require('./routes/announcementRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const googleAuthRoutes = require('./routes/googleAuthRoutes');
 const patientAuthRoutes = require('./routes/patientAuthRoutes');
-const { passport } = require('./controllers/googleAuthController');
 dotenv.config();
 connectDB();
 
