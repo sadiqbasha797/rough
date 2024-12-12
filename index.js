@@ -6,7 +6,6 @@ const patientRoutes = require('./routes/patientRoutes');
 const bodyParser = require('body-parser');
 const clinisistRoutes = require('./routes/clinisistRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const passport = require('passport');
 const ass = require('./routes/assessmentRoutes');
 const recommendation = require('./routes/recommendationRoutes');
 const privacy = require('./routes/privacyPolicyRoutes');
@@ -28,6 +27,9 @@ const assistantRoutes = require('./routes/assistantRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const announcementRoutes = require('./routes/announcementRoutes');     
 const paymentRoutes = require('./routes/paymentRoutes');
+const googleAuthRoutes = require('./routes/googleAuthRoutes');
+const patientAuthRoutes = require('./routes/patientAuthRoutes');
+const { passport } = require('./controllers/googleAuthController');
 dotenv.config();
 connectDB();
 
@@ -62,6 +64,8 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/faq', faqRoutes);
 app.use('/api/announcement', announcementRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/googleAuth', googleAuthRoutes);
+app.use('/api/patientAuth', patientAuthRoutes);
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

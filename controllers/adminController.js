@@ -913,14 +913,20 @@ const getDoctorPlanSubscriptions = async (req, res) => {
         })
         .populate('clinisist') // Populate clinician details
         .populate('plan')
+        .populate('patient') // Added patient population
         .sort({ startDate: -1 });
 
         console.log('Found subscriptions count:', subscriptions.length); // Debug log
 
+        // Format the response to include patient details
+        const formattedSubscriptions = subscriptions.map(subscription => ({
+            ...subscription.toObject(),
+        }));
+
         res.status(200).json({
             status: 'success',
-            body: subscriptions,
-            count: subscriptions.length,
+            body: formattedSubscriptions,
+            count: formattedSubscriptions.length,
             message: 'Doctor plan subscriptions retrieved successfully',
         });
     } catch (error) {
