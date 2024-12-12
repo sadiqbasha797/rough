@@ -28,13 +28,17 @@ const assistantRoutes = require('./routes/assistantRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const announcementRoutes = require('./routes/announcementRoutes');     
 const paymentRoutes = require('./routes/paymentRoutes');
+const http = require('http');
+const socketIo = require('socket.io');
+
 dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 
 app.use(cors());
-
 app.use(bodyParser.json());
 app.use(passport.initialize());
 
@@ -51,9 +55,9 @@ app.use('/api/orgadmin', orgAdmin);
 app.use('/api/manager', manager);
 app.use('/api', forgot);
 app.use('/api', orgClinisist);
-app.use('/api/admin',color);
+app.use('/api/admin', color);
 app.use('/api/admin/', body);
-app.use('/api',bodyassessments);
+app.use('/api', bodyassessments);
 app.use('/api/orgSubscription', orgSubscriptionRoutes);
 app.use('/api/sub', mood);
 app.use('/api/doctorSub', clinicianSubRoutes);
@@ -62,13 +66,20 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/faq', faqRoutes);
 app.use('/api/announcement', announcementRoutes);
 app.use('/api/payment', paymentRoutes);
+
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`app running on ${PORT}`);
 });
 
-
+io.on('connection', (socket) => {
+    console.log('New client connected:', socket.id);
+    
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+    });
+});
 
 const cron = require('node-cron');
 const { checkAndUpdateExpiredSubscriptions } = require('./controllers/orgSubscription');
