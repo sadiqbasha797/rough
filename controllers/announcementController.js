@@ -3,7 +3,7 @@ const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
 
 exports.createAnnouncement = async (req, res) => {
     try {
-        const { title, content, startDate, endDate } = req.body;
+        const { title, content, startDate, endDate, type } = req.body;
         let media = null;
 
         if (req.file) {
@@ -19,6 +19,7 @@ exports.createAnnouncement = async (req, res) => {
             media,
             startDate,
             endDate,
+            type
         });
 
         await announcement.save();
@@ -96,6 +97,8 @@ exports.updateAnnouncement = async (req, res) => {
             const media = await uploadFile(fileContent, key, mimeType);
             updateData.media = media;
         }
+
+        updateData.type = type || announcement.type;
 
         const announcement = await Announcement.findByIdAndUpdate(
             id,

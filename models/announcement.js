@@ -20,6 +20,11 @@ const announcementSchema = new mongoose.Schema({
     },
     endDate: {
         type: Date
+    },
+    type: {
+        type: String,
+        enum: ['All', 'Clinicians', 'Managers', 'Organizations', 'Patients', 'Assistants'],
+        default: 'All'
     }
 }, {
     timestamps: true
