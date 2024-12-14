@@ -828,17 +828,22 @@ const getClinicistRecommendationsAndPatients = async (req, res) => {
 
         // Group recommendations by patient
         const patientRecommendations = recommendations.reduce((acc, rec) => {
-            const patientId = rec.recommendedTo._id.toString();
+            const patientId = rec.recommendedTo ? rec.recommendedTo._id.toString() : 'unknown';
             if (!acc[patientId]) {
                 acc[patientId] = {
-                    patient: rec.recommendedTo,
+                    patient: rec.recommendedTo ? rec.recommendedTo : { _id: 'unknown', userName: 'Patient not found' },
                     recommendations: []
                 };
             }
             acc[patientId].recommendations.push({
                 _id: rec._id,
-                category: rec.category,
                 recommendation: rec.recommendation,
+                relatedMedia: rec.relatedMedia,
+                recommendedBy: {
+                    _id: rec.recommendedBy._id,
+                    name: req.clinisist.name
+                },
+                recommendedTo: rec.recommendedTo._id.toString(),
                 type: rec.type,
                 timestamp: rec.timestamp
             });

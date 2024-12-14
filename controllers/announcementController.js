@@ -10,7 +10,9 @@ exports.createAnnouncement = async (req, res) => {
             const fileContent = req.file.buffer;
             const key = `announcements/${Date.now()}-${req.file.originalname}`;
             const mimeType = req.file.mimetype;
-            media = await uploadFile(fileContent, key, mimeType);
+            // Resize image to 1080 x 680 before uploading
+            const resizedImage = await resizeImage(fileContent, 1080, 680);
+            media = await uploadFile(resizedImage, key, mimeType);
         }
 
         const announcement = new Announcement({

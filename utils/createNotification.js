@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const { io } = require('../index'); // Import the Socket.IO instance
+const admin = require('../utils/firebaseConfig'); // Import Firebase configuration
 
 const createNotification = async (recipientId, recipientModel, message, senderId = null, senderModel = null, type = 'general') => {
   try {
