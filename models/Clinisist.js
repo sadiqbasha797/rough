@@ -149,6 +149,11 @@ const ClinisistSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
+  deviceToken: {
+    type: String,
+    required: false,
+    default: null
+  },
 }, { timestamps: true }); 
 
 const Clinisist = mongoose.model('Clinisist', ClinisistSchema);

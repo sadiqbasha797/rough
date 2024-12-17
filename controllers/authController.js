@@ -133,7 +133,7 @@ const verifyEmail = async (req, res) => {
 };
 
 const authPatient = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, deviceToken } = req.body;
 
     try {
         const patient = await Patient.findOne({ email });
@@ -155,6 +155,13 @@ const authPatient = async (req, res) => {
         }
 
         if (await bcrypt.compare(password, patient.password)) {
+            // Update device token if provided
+            if (deviceToken && deviceToken !== patient.deviceToken) {
+                patient.deviceToken = deviceToken;
+                await patient.save();
+                console.log('Device token updated for patient:', patient._id);
+            }
+
             const token = generateToken(patient._id);
             return res.json({
                 status: 'success',
@@ -167,7 +174,8 @@ const authPatient = async (req, res) => {
                         dateOfBirth: patient.dateOfBirth,
                         guardian: patient.guardian,
                         mobile: patient.mobile,
-                        score: patient.score
+                        score: patient.score,
+                        deviceToken: patient.deviceToken
                     },
                     token
                 },
@@ -268,31 +276,43 @@ const registerClinisist = async (req, res) => {
 };
 
 const authClinisist = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, deviceToken } = req.body;
 
     try {
         const clinisist = await Clinisist.findOne({ email });
 
-        if (clinisist && (await bcrypt.compare(password, clinisist.password))) {
+        if (!clinisist) {
+            return res.status(401).json({
+                status: 'error',
+                body: null,
+                message: "Invalid emailId",
+            });
+        }
+
+        if (await bcrypt.compare(password, clinisist.password)) {
+            // Update device token if provided
+            if (deviceToken && deviceToken !== clinisist.deviceToken) {
+                clinisist.deviceToken = deviceToken;
+                await clinisist.save();
+                console.log('Device token updated for clinisist:', clinisist._id);
+            }
+
             res.json({
                 status: 'success',
                 body: {
-                    clinisist: clinisist,
+                    clinisist: {
+                        ...clinisist.toObject(),
+                        password: undefined // Remove password from response
+                    },
                     token: generateToken(clinisist._id),
                 },
                 message: 'Authentication successful.'
-            });
-        } else if (clinisist) {
-            res.status(401).json({
-                status: 'error',
-                body: null,
-                message: "Invalid Password",
             });
         } else {
             res.status(401).json({
                 status: 'error',
                 body: null,
-                message: "Invalid emailId",
+                message: "Invalid Password",
             });
         }
     } catch (error) {

@@ -1,8 +1,10 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('../ifeelincolor-d1d48668e823.json'); // Update the path to your JSON file
+const serviceAccount = require('../2.json'); // Your service account key file
 
+// Initialize Firebase Admin with explicit project ID
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.cert(serviceAccount),
+    projectId: 'ifeel-in-colors', // Make sure this matches your Firebase project ID
 });
 
 module.exports = admin; 

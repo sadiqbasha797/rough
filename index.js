@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const socketIO = require('socket.io');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
@@ -32,6 +34,26 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIO(server);
+
+// Store io instance globally
+global.io = io;
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('New client connected');
+  
+  // Handle joining a room (using userId as room name)
+  socket.on('join', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
 
 app.use(cors());
 
@@ -63,12 +85,11 @@ app.use('/api/faq', faqRoutes);
 app.use('/api/announcement', announcementRoutes);
 app.use('/api/payment', paymentRoutes);
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`app running on ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
-
+module.exports = { app, io };
 
 const cron = require('node-cron');
 const { checkAndUpdateExpiredSubscriptions } = require('./controllers/orgSubscription');

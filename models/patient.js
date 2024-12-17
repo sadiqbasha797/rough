@@ -72,7 +72,11 @@ const patientSchema = new mongoose.Schema({
     },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
-    
+    deviceToken: {
+        type: String,
+        required: false,
+        default: null
+    },
 }, { timestamps: true });
 
 // Format the date before saving
