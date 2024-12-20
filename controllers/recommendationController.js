@@ -323,43 +323,62 @@ const getPortalRecommendations = async (req, res) => {
 const createDoctorRecommendation = (req, res) => {
     upload(req, res, async (err) => {
         if (err instanceof multer.MulterError) {
-            return res.status(400).json({ status: 'error', body: null, message: `Multer upload error: ${err.message}` });
+            return res.status(400).json({ 
+                status: 'error', 
+                body: null, 
+                message: `Multer upload error: ${err.message}` 
+            });
         } else if (err) {
-            return res.status(500).json({ status: 'error', body: null, message: `Unknown upload error: ${err.message}` });
+            return res.status(500).json({ 
+                status: 'error', 
+                body: null, 
+                message: `Unknown upload error: ${err.message}` 
+            });
         }
 
-        const { category, recommendation, recommendedTo } = req.body;
-        const recommendedBy = req.clinisist._id;
-        const relatedMedia = {
-            images: [],
-            documents: [],
-            videos: []
-        };
-
         try {
-            // Process uploaded files
-            for (const mediaType of ['images', 'documents', 'videos']) {
-                if (req.files[mediaType]) {
-                    for (const file of req.files[mediaType]) {
-                        const key = `${mediaType}/${uuidv4()}_${file.originalname}`;
-                        const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
-                        relatedMedia[mediaType].push({ url, public_id: key });
+            const { recommendation, recommendedTo, category } = req.body;
+            const recommendedBy = req.clinisist._id;
+
+            // Create new recommendation with default empty media arrays
+            const newRecommendation = new Recommendation({
+                recommendation,
+                recommendedTo,
+                recommendedBy,
+                type: 'doctor',
+                category: category || 'general',
+                relatedMedia: {
+                    images: [],
+                    documents: [],
+                    videos: []
+                }
+            });
+
+            // Process uploaded files if they exist
+            if (req.files) {
+                for (const mediaType of ['images', 'documents', 'videos']) {
+                    if (req.files[mediaType] && Array.isArray(req.files[mediaType])) {
+                        for (const file of req.files[mediaType]) {
+                            try {
+                                const key = `${mediaType}/${uuidv4()}_${file.originalname}`;
+                                const url = await s3Util.uploadFile(file.buffer, key, file.mimetype);
+                                newRecommendation.relatedMedia[mediaType].push({ 
+                                    url, 
+                                    public_id: key 
+                                });
+                            } catch (uploadError) {
+                                console.error('File upload error:', uploadError);
+                                // Continue with other files if one fails
+                            }
+                        }
                     }
                 }
             }
 
-            const newRecommendation = new Recommendation({
-                category,
-                recommendation,
-                relatedMedia,
-                recommendedBy,
-                recommendedTo,
-                type: 'doctor'
-            });
             await newRecommendation.save();
 
             // Create a notification for the patient
-            const notificationMessage = `You have a new ${category} recommendation from your clinician.`;
+            const notificationMessage = `You have a new ${category || 'general'} recommendation from your clinician.`;
             await createNotification(
                 recommendedTo,
                 'Patient',
