@@ -89,7 +89,7 @@ exports.getAnnouncementById = async (req, res) => {
 exports.updateAnnouncement = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, content, startDate, endDate } = req.body;
+        const { title, content, startDate, endDate, type } = req.body;
         let updateData = { title, content, startDate, endDate };
 
         if (req.file) {
@@ -100,7 +100,16 @@ exports.updateAnnouncement = async (req, res) => {
             updateData.media = media;
         }
 
-        updateData.type = type || announcement.type;
+        const existingAnnouncement = await Announcement.findById(id);
+        if (!existingAnnouncement) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'Announcement not found'
+            });
+        }
+
+        updateData.type = type || existingAnnouncement.type;
 
         const announcement = await Announcement.findByIdAndUpdate(
             id,
