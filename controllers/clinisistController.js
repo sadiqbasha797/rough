@@ -907,6 +907,57 @@ const getClinisistById = async (req, res) => {
     }
 };
 
+const updateLicenseImage = async (req, res) => {
+    const clinisistId = req.clinisist._id;
+
+    try {
+        const clinisist = await Clinisist.findById(clinisistId);
+        if (!clinisist) {
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: 'Clinisist not found'
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                status: "error",
+                body: null,
+                message: 'No license image file uploaded'
+            });
+        }
+
+        // Generate a unique key (filename) for the S3 bucket
+        const fileKey = `license_images/${Date.now()}_${req.file.originalname}`;
+
+        // Upload the file to S3
+        const imageUrl = await uploadFile(req.file.buffer, fileKey, req.file.mimetype);
+
+        // Optionally, delete the previous license image from S3 if exists
+        if (clinisist.licenseImage) {
+            const previousKey = clinisist.licenseImage.split('/').pop();
+            await deleteFile(`license_images/${previousKey}`);
+        }
+
+        // Update Clinisist's license image with the new S3 URL
+        clinisist.licenseImage = imageUrl;
+        await clinisist.save();
+
+        res.status(200).json({
+            status: "success",
+            body: { licenseImageUrl: clinisist.licenseImage },
+            message: 'License image updated successfully'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: error.message
+        });
+    }
+};
 
 module.exports = {
     getClinisistProfile,
@@ -925,5 +976,6 @@ module.exports = {
     getClinicistRecommendationStats,
     getNearbySubscribedPatientsAssessments,
     getClinicistRecommendationsAndPatients,
-    getClinisistById
+    getClinisistById,
+    updateLicenseImage
 };

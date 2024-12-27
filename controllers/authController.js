@@ -443,6 +443,80 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const resendVerificationEmail = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const patient = await Patient.findOne({ email });
+
+        if (!patient) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No user found with that email address.'
+            });
+        }
+
+        if (patient.verified === 'yes') {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'This email is already verified.'
+            });
+        }
+
+        // Generate new verification token
+        const verificationToken = crypto.randomBytes(20).toString('hex');
+        const tokenExpiration = Date.now() + 3600000; // 1 hour
+
+        patient.verificationToken = verificationToken;
+        patient.tokenExpiration = tokenExpiration;
+        await patient.save();
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Verify Your Email',
+            html: `<h4>Hello, ${patient.userName}</h4>
+                   <p>Please verify your email by clicking on the link below:</p>
+                   <a href="http://18.209.44.54:3000/api/auth/verify/${verificationToken}">Verify Email</a>`
+        };
+
+        transporter.sendMail(mailOptions, function(error, info) {
+            if (error) {
+                console.log(error);
+                return res.status(500).json({
+                    status: 'error',
+                    body: null,
+                    message: 'Failed to send verification email'
+                });
+            }
+            
+            return res.status(200).json({
+                status: 'success',
+                body: null,
+                message: 'Verification email has been resent. Please check your inbox.'
+            });
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     registerPatient, 
     authPatient, 
@@ -450,5 +524,6 @@ module.exports = {
     authClinisist, 
     verifyEmail, 
     resetPassword, 
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    resendVerificationEmail
 };

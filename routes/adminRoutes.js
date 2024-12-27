@@ -46,7 +46,8 @@ const {
     getAdminNotifications,
     getAssistants,
     updateAssistant,
-    deleteAssistant 
+    deleteAssistant,
+    getNonVerifiedClinicians
  } = require('../controllers/adminController');
 const {createPortalPlan, createPlan} = require('../controllers/planController');
 const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
@@ -120,5 +121,7 @@ router.put('/assistants/:assistantId', adminAuth, updateAssistant);
 router.delete('/assistants/:assistantId', adminAuth, deleteAssistant);
 router.put('/assistants/permissions/:assistantId', adminAuth, updateAssistantPermissions);
 router.get('/assistants/permissions/:assistantId', adminAuth, getAssistantPermissions);
+
+router.get('/non-verified-clinicians', adminAuth, getNonVerifiedClinicians);
 
 module.exports = router;

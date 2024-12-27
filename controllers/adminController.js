@@ -2403,6 +2403,31 @@ const deleteOrganization = async (req, res) => {
     }
 };
 
+const getNonVerifiedClinicians = async (req, res) => {
+    try {
+        const nonVerifiedClinicians = await Clinisist.find({ 
+            verified: 'no'
+        }).select('-password'); // Exclude password from the response
+
+        return res.status(200).json({
+            status: 'success',
+            body: nonVerifiedClinicians,
+            count: nonVerifiedClinicians.length,
+            message: nonVerifiedClinicians.length > 0 
+                ? 'Non-verified clinicians fetched successfully'
+                : 'No non-verified clinicians found'
+        });
+    } catch (error) {
+        console.error('Error fetching non-verified clinicians:', error);
+        return res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error fetching non-verified clinicians',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     registerAdmin,
     loginAdmin,
@@ -2447,6 +2472,7 @@ module.exports = {
     getAdminNotifications,
     getAssistants,
     updateAssistant,
-    deleteAssistant
+    deleteAssistant,
+    getNonVerifiedClinicians
 };
 

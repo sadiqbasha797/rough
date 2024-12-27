@@ -15,7 +15,8 @@ const {
     getClinicistSalesStats,
     getClinicistRecommendationStats,
     getNearbySubscribedPatientsAssessments,
-    getClinicistRecommendationsAndPatients
+    getClinicistRecommendationsAndPatients,
+    updateLicenseImage
 } = require('../controllers/clinisistController'); // Adjust the path as needed
 const { clincistProtect } = require('../middleware/auth'); // Middleware to protect routes
 const { createPlan, updatePlan, getPlansByClincist, deletePlan } = require('../controllers/planController');
@@ -42,4 +43,10 @@ router.route('/recommendation-stats').get(clincistProtect, getClinicistRecommend
 router.route('/nearby-subscribed-patients-assessments').post(clincistProtect, getNearbySubscribedPatientsAssessments);
 router.route('/recommended-patients').get(clincistProtect, getClinicistRecommendationsAndPatients);
 router.route('/check-active-subscription').get(clincistProtect, checkClinicistActiveSubscription);
+router.put(
+    '/update-license-image',
+    clincistProtect,
+    upload.single('licenseImage'),
+    updateLicenseImage
+);
 module.exports = router;
