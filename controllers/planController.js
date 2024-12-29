@@ -148,9 +148,13 @@ const showActivePlans = async (req, res) => {
 const getDoctorPlans = async (req, res) => {
     try {
         const doctorPlans = await Plan.find({ planType: 'doctor-plan', status: 'Active' });
+        const formattedPlans = doctorPlans.map(plan => ({
+            ...plan.toObject(),
+            price: parseFloat(plan.price).toFixed(2) // Format price to double
+        }));
         res.json({
             status: "success",
-            body: doctorPlans,
+            body: formattedPlans,
             message: "Doctor plans retrieved successfully"
         });
     } catch (err) {
@@ -165,9 +169,13 @@ const getDoctorPlans = async (req, res) => {
 const getPortalPlans = async (req, res) => {
     try {
         const portalPlans = await Plan.find({ planType: 'portal-plan', status: 'Active' });
+        const formattedPlans = portalPlans.map(plan => ({
+            ...plan.toObject(),
+            price: parseFloat(plan.price).toFixed(2) // Format price to double
+        }));
         res.json({
             status: "success",
-            body: portalPlans,
+            body: formattedPlans,
             message: "Portal plans retrieved successfully"
         });
     } catch (err) {
@@ -182,9 +190,13 @@ const getPortalPlans = async (req, res) => {
 const getOrganizationPlans = async (req, res) => {
     try {
         const organizationPlans = await Plan.find({ planType: 'organization-plan', status: 'Active' });
+        const formattedPlans = organizationPlans.map(plan => ({
+            ...plan.toObject(),
+            price: parseFloat(plan.price).toFixed(2) // Format price to double
+        }));
         res.json({
             status: "success",
-            body: organizationPlans,
+            body: formattedPlans,
             message: "Organization plans retrieved successfully"
         });
     } catch (err) {
