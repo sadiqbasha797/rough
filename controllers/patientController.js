@@ -716,6 +716,27 @@ const getPatientById = async (req, res) => {
     }
 };
 
+const getTotalPatients = async (req, res) => {
+    try {
+        const totalPatients = await Patient.countDocuments();
+        
+        res.status(200).json({
+            status: 'success',
+            body: {
+                total: totalPatients
+            },
+            message: 'Total patients count retrieved successfully'
+        });
+    } catch (error) {
+        console.error('Error counting patients:', error);
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Failed to count patients',
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     getAllClinisists,
@@ -733,5 +754,6 @@ module.exports = {
     updatePatientByAdmin,
     deletePatientByAdmin,
     getPatientJoinedStats,
-    getPatientById
+    getPatientById,
+    getTotalPatients,
 };
