@@ -150,7 +150,7 @@ const getDoctorPlans = async (req, res) => {
         const doctorPlans = await Plan.find({ planType: 'doctor-plan', status: 'Active' });
         const formattedPlans = doctorPlans.map(plan => ({
             ...plan.toObject(),
-            price: parseFloat(plan.price).toFixed(2) // Format price to double
+            price: parseFloat(plan.price) // Ensure price is a double
         }));
         res.json({
             status: "success",
@@ -171,7 +171,7 @@ const getPortalPlans = async (req, res) => {
         const portalPlans = await Plan.find({ planType: 'portal-plan', status: 'Active' });
         const formattedPlans = portalPlans.map(plan => ({
             ...plan.toObject(),
-            price: parseFloat(plan.price).toFixed(2) // Format price to double
+            price: parseFloat(plan.price) // Ensure price is a double
         }));
         res.json({
             status: "success",
@@ -192,7 +192,7 @@ const getOrganizationPlans = async (req, res) => {
         const organizationPlans = await Plan.find({ planType: 'organization-plan', status: 'Active' });
         const formattedPlans = organizationPlans.map(plan => ({
             ...plan.toObject(),
-            price: parseFloat(plan.price).toFixed(2) // Format price to double
+            price: parseFloat(plan.price) // Ensure price is a double
         }));
         res.json({
             status: "success",
