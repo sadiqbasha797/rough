@@ -43,7 +43,8 @@ const {
         getSubscriptionCountsMonthWise,
         getDetailedSubscriptionCountsMonthWise,
         getTotalSubscriptionCounts,
-        getDetailedEarningsMonthWise
+        getDetailedEarningsMonthWise,
+        getNonVerifiedClinicians,
     } = require('../controllers/adminController');
 const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
 const {getClinisistById} = require('../controllers/clinisistController');
@@ -103,4 +104,6 @@ router.get('/detailed-earnings-month-wise', assistantAuth, getDetailedEarningsMo
 
 router.get('/get-permissions/:assistantId',  getAssistantPermissions);
 
+
+router.get('/non-verified-clinicians', assistantAuth, getNonVerifiedClinicians);
 module.exports = router; 
