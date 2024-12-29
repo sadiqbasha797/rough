@@ -26,7 +26,7 @@ const createPlan = async (req, res) => {
 };
 
 const createPortalPlan = async (req, res) => {
-    const { name, price, details, validity } = req.body;
+    const { name, price, details, validity, planType } = req.body;
     try {
         const plan = new Plan({
             name,  // Use the name provided in the request body
@@ -34,7 +34,7 @@ const createPortalPlan = async (req, res) => {
             details,
             validity,
             createdBy: req.admin._id,
-            planType: 'portal-plan'  // Set the planType to 'portal-plan'
+            planType: planType  // Set the planType to 'portal-plan'
         });
 
         const createdPlan = await plan.save();
