@@ -205,6 +205,36 @@ const getOrganizationPlans = async (req, res) => {
     }
 };
 
+const getPlanById = async (req, res) => {
+    try {
+        const plan = await Plan.findById(req.params.id);
+        
+        if (!plan) {
+            return res.status(404).json({
+                status: "error",
+                body: null,
+                message: "Plan not found"
+            });
+        }
+
+        res.json({
+            status: "success",
+            body: {
+                ...plan.toObject(),
+                price: parseFloat(plan.price) // Ensure price is returned as double
+            },
+            message: "Plan retrieved successfully"
+        });
+    } catch (err) {
+        console.error('Error fetching plan:', err);
+        res.status(500).json({
+            status: "error",
+            body: null,
+            message: err.message
+        });
+    }
+};
+
 module.exports = {
     createPlan, 
     updatePlan, 
@@ -214,5 +244,6 @@ module.exports = {
     createPortalPlan,
     getDoctorPlans,
     getPortalPlans,
-    getOrganizationPlans
+    getOrganizationPlans,
+    getPlanById,
 };

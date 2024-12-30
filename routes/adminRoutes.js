@@ -49,7 +49,7 @@ const {
     deleteAssistant,
     getNonVerifiedClinicians
  } = require('../controllers/adminController');
-const {createPortalPlan, createPlan,getDoctorPlans,updatePlan} = require('../controllers/planController');
+const {createPortalPlan, createPlan,getDoctorPlans,updatePlan,getPlanById} = require('../controllers/planController');
 const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
 const {getClinisistById} = require('../controllers/clinisistController');
 const fileUpload = require('express-fileupload');
@@ -76,6 +76,7 @@ router.route('/create-plan').post(adminAuth, createPortalPlan);
 router.route('/create-doctor-plan').post(adminAuth, createPlan);
 router.route('/list-doctor-plans').get(adminAuth,getDoctorPlans);
 router.route('/update-plan/:id').put(adminAuth,updatePlan);
+router.route('/get-plan/:id').get(adminAuth,getPlanById);
 router.get('/portal-plans', adminAuth, getPortalPlans);
 router.get('/portal-plans/:id', adminAuth, getPortalPlanById);
 router.put('/portal-plans/:id', adminAuth, updatePortalPlan);
