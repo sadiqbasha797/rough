@@ -366,7 +366,7 @@ const updatePortalPlan = async (req, res) => {
 const deletePortalPlan = async (req, res) => {
     try {
         const planId = req.params.id;
-        const plan = await Plan.findOneAndDelete({ _id: planId, planType: 'portal-plan' });
+        const plan = await Plan.findOneAndDelete({ _id: planId, planType: 'portal-plan' || 'doctor-plan' });
 
         if (!plan) {
             return res.status(404).json({

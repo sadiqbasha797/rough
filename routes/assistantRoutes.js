@@ -48,7 +48,7 @@ const {
     } = require('../controllers/adminController');
 const {updateAssistantPermissions, getAssistantPermissions} = require('../controllers/assistantController');
 const {getClinisistById} = require('../controllers/clinisistController');
-
+const {getDoctorPlans,updatePlan} = require('../controllers/planController');  
 // Public routes
 router.post('/register', registerAssistant);
 router.post('/login', loginAssistant);
@@ -104,6 +104,7 @@ router.get('/detailed-earnings-month-wise', assistantAuth, getDetailedEarningsMo
 
 router.get('/get-permissions/:assistantId',  getAssistantPermissions);
 
-
+router.get('/list-doctor-plans',assistantAuth, getDoctorPlans);
+router.put('/update-plan/:id', assistantAuth, updatePlan);
 router.get('/non-verified-clinicians', assistantAuth, getNonVerifiedClinicians);
 module.exports = router; 

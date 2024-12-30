@@ -50,7 +50,7 @@ const createPortalPlan = async (req, res) => {
 
 const updatePlan = async (req, res) => {
     const {id} = req.params;
-    const {name, price, details, validity, status} = req.body;
+    const {name, price, details, validity, status, planType} = req.body;
 
     try {
         const plan = await Plan.findById(id);
@@ -60,17 +60,14 @@ const updatePlan = async (req, res) => {
                 message: 'Plan not found',
             });
         }
-        if (plan.createdBy.toString() !== req.clinisist._id.toString()) {
-            return res.status(403).json({
-                message: 'NOt authorized to modify this plan',
-            });
-        }
+      
         
         plan.name = name || plan.name;
         plan.price = price || plan.price;
         plan.details = details || plan.details;
         plan.validity = validity || plan.validity;
         plan.status = status || plan.status;
+        plan.planType = planType || plan.planType;
         const updatedPlan = await plan.save();
 
         res.json(updatedPlan);
