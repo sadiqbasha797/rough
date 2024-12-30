@@ -366,27 +366,27 @@ const updatePortalPlan = async (req, res) => {
 const deletePortalPlan = async (req, res) => {
     try {
         const planId = req.params.id;
-        const plan = await Plan.findOneAndDelete({ _id: planId, planType: 'portal-plan' || 'doctor-plan' });
+        const plan = await Plan.findOneAndDelete({ _id: planId });
 
         if (!plan) {
             return res.status(404).json({
                 status: 'error',
                 body: null,
-                message: 'Portal plan not found',
+                message: 'plan not found',
             });
         }
 
         res.status(200).json({
             status: 'success',
             body: plan,
-            message: 'Portal plan deleted successfully',
+            message: 'Plan deleted successfully',
         });
     } catch (error) {
         console.error('Error deleting portal plan:', error);
         res.status(500).json({
             status: 'error',
             body: null,
-            message: 'An error occurred while deleting the portal plan: ' + error.message
+            message: 'An error occurred while deleting the  plan: ' + error.message
         });
     }
 };
