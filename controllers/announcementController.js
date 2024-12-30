@@ -1,5 +1,21 @@
 const Announcement = require('../models/announcement');
 const { uploadFile, deleteFile, getFileUrl } = require('../utils/s3Util');
+const sharp = require('sharp');
+
+const resizeImage = async (buffer, width, height) => {
+    try {
+        const resizedImageBuffer = await sharp(buffer)
+            .resize(width, height, {
+                fit: 'contain',
+                background: { r: 255, g: 255, b: 255, alpha: 1 }
+            })
+            .toBuffer();
+        return resizedImageBuffer;
+    } catch (error) {
+        console.error('Error resizing image:', error);
+        throw error;
+    }
+};
 
 exports.createAnnouncement = async (req, res) => {
     try {
