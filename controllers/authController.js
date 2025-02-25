@@ -53,7 +53,7 @@ const registerPatient = async (req, res) => {
             subject: 'Verify Your Email',
             html: `<h4>Hello, ${userName}</h4>
                    <p>Please verify your email by clicking on the link below:</p>
-                   <a href="http://18.209.44.54:3000/api/auth/verify/${verificationToken}">Verify Email</a>`
+                   <a href="https://ifeelincolorvps.projexino.com/api/auth/verify/${verificationToken}">Verify Email</a>`
         };
 
         transporter.sendMail(mailOptions, async function(error, info) {
@@ -353,7 +353,7 @@ const sendPasswordResetEmail = async (req, res) => {
             }
         });
 
-        const resetUrl = `http://18.209.44.54:3000/api/auth/reset/${resetToken}?userType=${userType}`;
+        const resetUrl = `https://ifeelincolorvps.projexino.com/api/auth/reset/${resetToken}?userType=${userType}`;
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
@@ -487,7 +487,7 @@ const resendVerificationEmail = async (req, res) => {
             subject: 'Verify Your Email',
             html: `<h4>Hello, ${patient.userName}</h4>
                    <p>Please verify your email by clicking on the link below:</p>
-                   <a href="http://18.209.44.54:3000/api/auth/verify/${verificationToken}">Verify Email</a>`
+                   <a href="https://ifeelincolorvps.projexino.com/api/auth/verify/${verificationToken}">Verify Email</a>`
         };
 
         transporter.sendMail(mailOptions, function(error, info) {
