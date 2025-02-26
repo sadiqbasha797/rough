@@ -173,5 +173,38 @@ const getPrivacyPolicy = async (req, res) => {
     }
 };
 
+const getPrivacyPolicyLatest = async (req, res) => {
+    try {
+        // Retrieve the latest privacy policy
+        const privacyPolicy = await PrivacyPolicy.findOne().sort({ updatedAt: -1 });
 
-module.exports = { createPrivacyPolicy, updatePrivacyPolicy, getPrivacyPolicy, updatePrivacy };
+        if (!privacyPolicy) {
+            return res.status(404).json({
+                status: 'error',
+                body: null,
+                message: 'No privacy policy found'
+            });
+        }
+
+        // Format the updatedAt field
+        const formattedDate = moment(privacyPolicy.updatedAt).format('Do MMMM YYYY');
+
+        res.json({
+            status: 'success',
+            body: {
+                ...privacyPolicy.toObject(),
+                updatedAt: formattedDate
+            },
+            message: 'Privacy policy retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'An error occurred while retrieving the privacy policy',
+            error: error.message
+        });
+    }
+};
+
+module.exports = { createPrivacyPolicy, updatePrivacyPolicy, getPrivacyPolicy, updatePrivacy, getPrivacyPolicyLatest };

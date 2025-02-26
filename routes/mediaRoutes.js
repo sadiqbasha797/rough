@@ -7,6 +7,6 @@ const {patientProtect} = require('../middleware/auth')
 router.post('/image',patientProtect , upload.single('image'), uploadPatientImage);
 router.get('/image', patientProtect , fetchPatientImage);
 router.delete('/image', patientProtect ,deletePatientImage);
-router.put('/image', upload.single('image'), patientProtect, updatePatientImage);
+router.put('/image', patientProtect, upload.single('image'), updatePatientImage);
 
 module.exports = router;
