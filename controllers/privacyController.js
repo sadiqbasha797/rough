@@ -141,8 +141,8 @@ const getPrivacyPolicy = async (req, res) => {
                 <p>Ifeelincolor may collect basic information from Users in order to provide and improve our services. This information may include but is not limited to the individual's name, contact information, and professional details. The purpose of collecting this information is to set up your account and provide you with the necessary features of the application.</p>
 
                 <h2>2. Location and Background Location Data</h2>
-                <p>Ifeelincolor utilizes location and background location services when Users clock in and out through the App. This helps maintain a record of the User's working hours while they are within the allotted area.</p>  
-                <p>Location information is securely stored and used solely for work-related purposes. By using the App, Users consent to the collection, storage, and use of their location information for the purposes stated in this Privacy Policy.</p>
+                <p>Ifeelincolor collects location data to help Users find nearby doctors or patients and communicate with them more effectively. This location information is used to provide relevant results based on the User's current location.</p>  
+                <p>Location information is securely stored and used solely for the purposes of facilitating communication between Users and ensuring relevant connections within the app. By using the App, Users consent to the collection, storage, and use of their location information as outlined in this Privacy Policy.</p>
 
                 <h2>3. Data Usage and Storage</h2>
                 <p>User data collected by Ifeelincolor is securely stored on servers. We utilize industry-standard security measures to protect User data from unauthorized access or disclosure. The collected data is used to provide the requested services, improve App functionality, and communicate with Users regarding updates, support, and other service-related matters.</p>
