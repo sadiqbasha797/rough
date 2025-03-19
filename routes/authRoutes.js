@@ -9,7 +9,9 @@ router.get('/verify/:token', verifyEmail);
 
 router.post('/doctor-register', upload.fields([
     { name: 'image', maxCount: 1 },
-    { name: 'licenseImage', maxCount: 1 }
+    { name: 'licenseImage', maxCount: 1 },
+    { name: 'front_license', maxCount: 1 },
+    { name: 'back_license', maxCount: 1 }
 ]), registerClinisist);
 router.post('/doctor-login', authClinisist);
 router.post('/request-password-reset', sendPasswordResetEmail);

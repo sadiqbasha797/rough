@@ -88,6 +88,14 @@ const ClinisistSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  front_license :{
+    type: String,
+    default: null
+  },
+  back_license :{
+    type: String,
+    default: null
+  },
   ratings: {
     type: String,
     default: null

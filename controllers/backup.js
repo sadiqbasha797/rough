@@ -227,35 +227,24 @@ const registerClinisist = async (req, res) => {
         // Handle file uploads
         let imageUrl = null;
         let licenseImageUrl = null;
-        let frontLicenseUrl = null;
-        let backLicenseUrl = null;
-    
+
         if (req.files) {
             if (req.files['image']) {
                 const imageFile = req.files['image'][0];
                 const imageKey = `doctor_images/${Date.now()}_${imageFile.originalname}`;
                 imageUrl = await uploadFile(imageFile.buffer, imageKey, imageFile.mimetype);
             }
-    
+
             if (req.files['licenseImage']) {
                 const licenseFile = req.files['licenseImage'][0];
                 const licenseKey = `license_images/${Date.now()}_${licenseFile.originalname}`;
                 licenseImageUrl = await uploadFile(licenseFile.buffer, licenseKey, licenseFile.mimetype);
             }
-    
-            if (req.files['front_license']) {
-                const frontLicenseFile = req.files['front_license'][0];
-                const frontLicenseKey = `license_images/${Date.now()}_front_${frontLicenseFile.originalname}`;
-                frontLicenseUrl = await uploadFile(frontLicenseFile.buffer, frontLicenseKey, frontLicenseFile.mimetype);
-            }
-    
-            if (req.files['back_license']) {
-                const backLicenseFile = req.files['back_license'][0];
-                const backLicenseKey = `license_images/${Date.now()}_back_${backLicenseFile.originalname}`;
-                backLicenseUrl = await uploadFile(backLicenseFile.buffer, backLicenseKey, backLicenseFile.mimetype);
-            }
         }
-    
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
         const clinisist = await Clinisist.create({
             name,
             email,
@@ -268,8 +257,6 @@ const registerClinisist = async (req, res) => {
             about,
             image: imageUrl,
             licenseImage: licenseImageUrl,
-            front_license: frontLicenseUrl,
-            back_license: backLicenseUrl,
             ratings,
             experience,
             location,
