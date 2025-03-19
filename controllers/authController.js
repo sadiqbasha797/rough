@@ -224,6 +224,10 @@ const registerClinisist = async (req, res) => {
             });
         }
 
+        // Generate hashed password first
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
         // Handle file uploads
         let imageUrl = null;
         let licenseImageUrl = null;
@@ -255,13 +259,13 @@ const registerClinisist = async (req, res) => {
                 backLicenseUrl = await uploadFile(backLicenseFile.buffer, backLicenseKey, backLicenseFile.mimetype);
             }
         }
-    
+
         const clinisist = await Clinisist.create({
             name,
             email,
             mobileNum,
             dob,
-            password: hashedPassword,
+            password: hashedPassword,  // Now hashedPassword is defined
             specializedIn,
             address,
             services,
