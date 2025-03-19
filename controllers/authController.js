@@ -5,6 +5,7 @@ const Clinisist = require('../models/Clinisist');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto'); // To generate a token
 const createNotification = require('../utils/createNotification');
+const { uploadFile } = require('../utils/s3Util');  // Add this line with other requires
 
 const registerPatient = async (req, res) => {
     const { userName, email, password, dateOfBirth, address, mobile, guardian, location } = req.body;
@@ -194,13 +195,25 @@ const authPatient = async (req, res) => {
 };
 
 const registerClinisist = async (req, res) => {
-    const { 
-        name, email, mobileNum, dob, password, specializedIn, address, services, about,
-        image, licenseImage, ratings, experience, location, careerpath, highlights,
-        organization, degree, licenseNumber, licenseExpirationDate, npiNumber
-    } = req.body;
-
     try {
+        console.log('Request body:', req.body);
+        console.log('Request files:', req.files);
+        
+        const { 
+            name, email, mobileNum, dob, password, specializedIn, address, services, about,
+            ratings, experience, location, careerpath, highlights,
+            organization, degree, licenseNumber, licenseExpirationDate, npiNumber
+        } = req.body;
+
+        // Validate required fields
+        if (!email || !password) {
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Email and password are required'
+            });
+        }
+
         const clinisistExists = await Clinisist.findOne({ email });
 
         if (clinisistExists) {
@@ -209,6 +222,24 @@ const registerClinisist = async (req, res) => {
                 body: null,
                 message: 'User already exists'
             });
+        }
+
+        // Handle file uploads
+        let imageUrl = null;
+        let licenseImageUrl = null;
+
+        if (req.files) {
+            if (req.files['image']) {
+                const imageFile = req.files['image'][0];
+                const imageKey = `doctor_images/${Date.now()}_${imageFile.originalname}`;
+                imageUrl = await uploadFile(imageFile.buffer, imageKey, imageFile.mimetype);
+            }
+
+            if (req.files['licenseImage']) {
+                const licenseFile = req.files['licenseImage'][0];
+                const licenseKey = `license_images/${Date.now()}_${licenseFile.originalname}`;
+                licenseImageUrl = await uploadFile(licenseFile.buffer, licenseKey, licenseFile.mimetype);
+            }
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -224,8 +255,8 @@ const registerClinisist = async (req, res) => {
             address,
             services,
             about,
-            image,
-            licenseImage,
+            image: imageUrl,
+            licenseImage: licenseImageUrl,
             ratings,
             experience,
             location,
