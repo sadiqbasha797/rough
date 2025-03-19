@@ -199,11 +199,27 @@ const registerClinisist = async (req, res) => {
         console.log('Request body:', req.body);
         console.log('Request files:', req.files);
         
+        // Remove address from destructuring
         const { 
-            name, email, mobileNum, dob, password, specializedIn, address, services, about,
+            name, email, mobileNum, dob, password, specializedIn, services, about,
             ratings, experience, location, careerpath, highlights,
             organization, degree, licenseNumber, licenseExpirationDate, npiNumber
         } = req.body;
+
+        // Parse address separately
+        let address;
+        try {
+            address = typeof req.body.address === 'string' ? 
+                     JSON.parse(req.body.address) : 
+                     req.body.address;
+        } catch (error) {
+            console.error('Error parsing address:', error);
+            return res.status(400).json({
+                status: 'error',
+                body: null,
+                message: 'Invalid address format'
+            });
+        }
 
         // Validate required fields
         if (!email || !password) {
@@ -265,9 +281,13 @@ const registerClinisist = async (req, res) => {
             email,
             mobileNum,
             dob,
-            password: hashedPassword,  // Now hashedPassword is defined
+            password: hashedPassword,
             specializedIn,
-            address,
+            address: {  // Explicitly structure the address object
+                latitude: address.latitude,
+                longitude: address.longitude,
+                location: address.location
+            },
             services,
             about,
             image: imageUrl,
