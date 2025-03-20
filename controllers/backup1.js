@@ -199,9 +199,9 @@ const registerClinisist = async (req, res) => {
         console.log('Request body:', req.body);
         console.log('Request files:', req.files);
         
-        // Updated destructuring to include userName instead of name
+        // Remove address from destructuring
         const { 
-            userName, email, mobileNum, dob, password, specializedIn, services, about,
+            name, email, mobileNum, dob, password, specializedIn, services, about,
             ratings, experience, location, careerpath, highlights,
             organization, degree, licenseNumber, licenseExpirationDate, npiNumber
         } = req.body;
@@ -277,13 +277,13 @@ const registerClinisist = async (req, res) => {
         }
 
         const clinisist = await Clinisist.create({
-            name: userName,  // Store userName as name
+            name,
             email,
             mobileNum,
             dob,
             password: hashedPassword,
             specializedIn,
-            address: {
+            address: {  // Explicitly structure the address object
                 latitude: address.latitude,
                 longitude: address.longitude,
                 location: address.location
