@@ -368,6 +368,8 @@ const authClinisist = async (req, res) => {
             const clinisistData = {
                 ...clinisist.toObject(),
                 password: undefined,
+                specializedIn: clinisist.specializedIn || "",
+                location: clinisist.location || "",
                 image: clinisist.image || "",
                 licenseImage: clinisist.licenseImage || "",
                 front_license: clinisist.front_license || "",
@@ -376,7 +378,7 @@ const authClinisist = async (req, res) => {
                 services: clinisist.services || "",
                 ratings: clinisist.ratings || "",
                 experience: clinisist.experience || "",
-                careerpath: clinisist.careerpath || "",
+                careerpath: clinisist.careerpath || [],
                 highlights: clinisist.highlights || "",
                 organization: clinisist.organization || "",
                 degree: clinisist.degree || "",
