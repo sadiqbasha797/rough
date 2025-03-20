@@ -352,7 +352,7 @@ const authClinisist = async (req, res) => {
             });
         }
 
-        if (clinisist.Active !== 'yes') {
+        if (clinisist.verified !== 'yes') {
             return res.status(401).json({
                 status: 'success',
                 body: {
