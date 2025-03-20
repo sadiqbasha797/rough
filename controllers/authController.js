@@ -347,13 +347,12 @@ const authClinisist = async (req, res) => {
         if (!clinisist) {
             return res.status(401).json({
                 status: 'error',
-                body: null,
+                body: "",
                 message: "Invalid emailId",
             });
         }
 
-        // Add verification check
-        if (clinisist.verified !== 'yes') {
+        if (clinisist.Active !== 'yes') {
             return res.status(401).json({
                 status: 'success',
                 body: {
@@ -365,20 +364,32 @@ const authClinisist = async (req, res) => {
         }
 
         if (await bcrypt.compare(password, clinisist.password)) {
-            // Update device token if provided
-            if (deviceToken && deviceToken !== clinisist.deviceToken) {
-                clinisist.deviceToken = deviceToken;
-                await clinisist.save();
-                console.log('Device token updated for clinisist:', clinisist._id);
-            }
+            // Transform null values to empty strings in clinisist object
+            const clinisistData = {
+                ...clinisist.toObject(),
+                password: undefined,
+                image: clinisist.image || "",
+                licenseImage: clinisist.licenseImage || "",
+                front_license: clinisist.front_license || "",
+                back_license: clinisist.back_license || "",
+                about: clinisist.about || "",
+                services: clinisist.services || "",
+                ratings: clinisist.ratings || "",
+                experience: clinisist.experience || "",
+                careerpath: clinisist.careerpath || "",
+                highlights: clinisist.highlights || "",
+                organization: clinisist.organization || "",
+                degree: clinisist.degree || "",
+                licenseNumber: clinisist.licenseNumber || "",
+                licenseExpirationDate: clinisist.licenseExpirationDate || "",
+                npiNumber: clinisist.npiNumber || "",
+                deviceToken: clinisist.deviceToken || ""
+            };
 
             res.json({
                 status: 'success',
                 body: {
-                    clinisist: {
-                        ...clinisist.toObject(),
-                        password: undefined
-                    },
+                    clinisist: clinisistData,
                     token: generateToken(clinisist._id),
                 },
                 message: 'Authentication successful.'
@@ -386,7 +397,7 @@ const authClinisist = async (req, res) => {
         } else {
             res.status(401).json({
                 status: 'error',
-                body: null,
+                body: "",
                 message: "Invalid Password",
             });
         }
@@ -394,7 +405,7 @@ const authClinisist = async (req, res) => {
         console.log(error);
         res.status(500).json({
             status: 'error',
-            body: null,
+            body: "",
             message: error.message,
         });
     }
