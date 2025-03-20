@@ -69,18 +69,41 @@ const updateDoctorImage = async (req, res) => {
 
 const getClinisistProfile = async (req, res) => {
     try {
-        // Ensure we are working with a plain JavaScript object
+        // Get clinisist data as plain object
         const clinisistData = req.clinisist.toObject ? req.clinisist.toObject() : req.clinisist;
+
+        // Replace null values with empty strings
+        const formattedData = {
+            ...clinisistData,
+            image: clinisistData.image || "",
+            specializedIn: clinisistData.specializedIn || "",
+            about: clinisistData.about || "",
+            services: clinisistData.services || "",
+            licenseImage: clinisistData.licenseImage || "",
+            front_license: clinisistData.front_license || "",
+            back_license: clinisistData.back_license || "",
+            ratings: clinisistData.ratings || "",
+            experience: clinisistData.experience || "",
+            location: clinisistData.location || "",
+            careerpath: clinisistData.careerpath || [],
+            highlights: clinisistData.highlights || "",
+            organization: clinisistData.organization || "",
+            degree: clinisistData.degree || "",
+            licenseNumber: clinisistData.licenseNumber || "",
+            licenseExpirationDate: clinisistData.licenseExpirationDate || "",
+            npiNumber: clinisistData.npiNumber || "",
+            deviceToken: clinisistData.deviceToken || ""
+        };
 
         res.json({
             status: "success",
-            body: clinisistData,
+            body: formattedData,
             message: "Clinisist profile retrieved successfully"
         });
     } catch (error) {
         res.status(500).json({
             status: "error",
-            body: null,
+            body: "",
             message: "An error occurred while retrieving the clinisist profile"
         });
     }
