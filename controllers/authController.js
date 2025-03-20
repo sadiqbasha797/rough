@@ -199,9 +199,9 @@ const registerClinisist = async (req, res) => {
         console.log('Request body:', req.body);
         console.log('Request files:', req.files);
         
-        // Updated destructuring to include userName instead of name
+        // Updated destructuring to use mobile instead of mobileNum
         const { 
-            userName, email, mobileNum, dob, password, specializedIn, services, about,
+            userName, email, mobile, dob, password, specializedIn, services, about,
             ratings, experience, location, careerpath, highlights,
             organization, degree, licenseNumber, licenseExpirationDate, npiNumber
         } = req.body;
@@ -277,9 +277,9 @@ const registerClinisist = async (req, res) => {
         }
 
         const clinisist = await Clinisist.create({
-            name: userName,  // Store userName as name
+            name: userName,
             email,
-            mobileNum,
+            mobileNum: mobile,  // Map mobile to mobileNum in the database
             dob,
             password: hashedPassword,
             specializedIn,
