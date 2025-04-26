@@ -8,11 +8,11 @@ const createPlan = async (req, res) => {
     try {
         const plan = new Plan({
             name,
-            price,
+            price: parseFloat(price).toFixed(2),
             details,
             validity,
             createdBy: req.admin._id,
-            planType: 'doctor-plan' // Set the planType to 'doctor-plan'
+            planType: 'doctor-plan'
         });
 
         const createdPlan = await plan.save();
@@ -29,12 +29,12 @@ const createPortalPlan = async (req, res) => {
     const { name, price, details, validity, planType } = req.body;
     try {
         const plan = new Plan({
-            name,  // Use the name provided in the request body
-            price,
+            name,
+            price: parseFloat(price).toFixed(2),
             details,
             validity,
             createdBy: req.admin._id,
-            planType: planType  // Set the planType to 'portal-plan'
+            planType: planType
         });
 
         const createdPlan = await plan.save();
