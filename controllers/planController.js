@@ -3,20 +3,28 @@ const Subscription = require('../models/subscription');
 const Clinisist = require('../models/Clinisist');
 const Patient = require('../models/patient');
 
+// Helper function to format price with 2 decimal places
+const formatPrice = (price) => {
+    // Format to 2 decimal places as a string to preserve trailing zeros
+    return parseFloat(price).toFixed(2);
+};
+
 const createPlan = async (req, res) => {
     const { name, price, details, validity } = req.body;
     try {
         const plan = new Plan({
             name,
-            price: parseFloat(price).toFixed(2),
+            price,
             details,
             validity,
             createdBy: req.admin._id,
-            planType: 'doctor-plan'
+            planType: 'doctor-plan' // Set the planType to 'doctor-plan'
         });
 
         const createdPlan = await plan.save();
-        res.status(201).json(createdPlan);
+        const response = createdPlan.toObject();
+        response.price = formatPrice(response.price);
+        res.status(201).json(response);
     } catch (err) {
         console.log(err);
         res.status(500).json({
@@ -29,16 +37,18 @@ const createPortalPlan = async (req, res) => {
     const { name, price, details, validity, planType } = req.body;
     try {
         const plan = new Plan({
-            name,
-            price: parseFloat(price).toFixed(2),
+            name,  // Use the name provided in the request body
+            price,
             details,
             validity,
             createdBy: req.admin._id,
-            planType: planType
+            planType: planType  // Set the planType to 'portal-plan'
         });
 
         const createdPlan = await plan.save();
-        res.status(201).json(createdPlan);
+        const response = createdPlan.toObject();
+        response.price = formatPrice(response.price);
+        res.status(201).json(response);
     } catch (err) {
         console.log(err);
         res.status(500).json({
@@ -69,8 +79,10 @@ const updatePlan = async (req, res) => {
         plan.status = status || plan.status;
         plan.planType = planType || plan.planType;
         const updatedPlan = await plan.save();
-
-        res.json(updatedPlan);
+        
+        const response = updatedPlan.toObject();
+        response.price = formatPrice(response.price);
+        res.json(response);
     } catch (err) {
         res.status(500).json({
             message: err.message,
@@ -123,7 +135,12 @@ const deletePlan = async (req, res) => {
 const getPlansByClincist = async (req, res) => {
     try {
         const plans = await Plan.find({createdBy: req.clinisist._id});
-        res.json(plans);
+        const formattedPlans = plans.map(plan => {
+            const planObj = plan.toObject();
+            planObj.price = formatPrice(planObj.price);
+            return planObj;
+        });
+        res.json(formattedPlans);
     } catch (err) {
         res.status(500).json({
             message: err.message,
@@ -134,7 +151,12 @@ const getPlansByClincist = async (req, res) => {
 const showActivePlans = async (req, res) => {
     try {
         const plans = await Plan.find({status: 'Active'});
-        res.json(plans);
+        const formattedPlans = plans.map(plan => {
+            const planObj = plan.toObject();
+            planObj.price = formatPrice(planObj.price);
+            return planObj;
+        });
+        res.json(formattedPlans);
     } catch (err) {
         res.status(500).json({
             message: err.message,
@@ -147,7 +169,7 @@ const getDoctorPlans = async (req, res) => {
         const doctorPlans = await Plan.find({ planType: 'doctor-plan', status: 'Active' });
         const formattedPlans = doctorPlans.map(plan => ({
             ...plan.toObject(),
-            price: parseFloat(plan.price) // Ensure price is a double
+            price: formatPrice(plan.price)
         }));
         res.json({
             status: "success",
@@ -168,7 +190,7 @@ const getPortalPlans = async (req, res) => {
         const portalPlans = await Plan.find({ planType: 'portal-plan', status: 'Active' });
         const formattedPlans = portalPlans.map(plan => ({
             ...plan.toObject(),
-            price: parseFloat(plan.price) // Ensure price is a double
+            price: formatPrice(plan.price)
         }));
         res.json({
             status: "success",
@@ -189,7 +211,7 @@ const getOrganizationPlans = async (req, res) => {
         const organizationPlans = await Plan.find({ planType: 'organization-plan', status: 'Active' });
         const formattedPlans = organizationPlans.map(plan => ({
             ...plan.toObject(),
-            price: parseFloat(plan.price) // Ensure price is a double
+            price: formatPrice(plan.price)
         }));
         res.json({
             status: "success",
@@ -221,7 +243,7 @@ const getPlanById = async (req, res) => {
             status: "success",
             body: {
                 ...plan.toObject(),
-                price: parseFloat(plan.price) // Ensure price is returned as double
+                price: formatPrice(plan.price)
             },
             message: "Plan retrieved successfully"
         });

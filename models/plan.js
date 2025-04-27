@@ -38,6 +38,17 @@ const planSchema = new mongoose.Schema({
     timestamps: true,
 });
 
+// Add a method to format prices to 2 decimal places
+planSchema.set('toJSON', {
+    transform: function(doc, ret) {
+        // Format price to exactly 2 decimal places as a string
+        if (ret.price !== undefined) {
+            ret.price = Number(ret.price).toFixed(2);
+        }
+        return ret;
+    }
+});
+
 const Plan = mongoose.model('Plan', planSchema);
 
 module.exports = Plan;
