@@ -30,6 +30,7 @@ const assistantRoutes = require('./routes/assistantRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const announcementRoutes = require('./routes/announcementRoutes');     
 const paymentRoutes = require('./routes/paymentRoutes');
+const notificationAlertRoutes = require('./routes/notificationAlertRoutes');
 dotenv.config();
 connectDB();
 
@@ -87,7 +88,7 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/faq', faqRoutes);
 app.use('/api/announcement', announcementRoutes);
 app.use('/api/payment', paymentRoutes);
-
+app.use('/api/notification-alerts', notificationAlertRoutes);
 app.set('view engine', 'ejs');
 app.set('views', './views');
 
