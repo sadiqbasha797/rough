@@ -171,7 +171,8 @@ const authPatient = async (req, res) => {
                         guardian: patient.guardian,
                         mobile: patient.mobile,
                         score: patient.score,
-                        deviceToken: patient.deviceToken
+                        deviceToken: patient.deviceToken,
+                        image: patient.image || ""
                     },
                     token
                 },
