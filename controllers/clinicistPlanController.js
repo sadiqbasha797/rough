@@ -27,13 +27,21 @@ const createClinicistPlan = async (req, res) => {
     }
 };
 
+// Helper function to format price
+const formatPlanPrice = (plan) => {
+    const formattedPlan = plan.toObject();
+    formattedPlan.price = formattedPlan.price.toFixed(2);
+    return formattedPlan;
+};
+
 // Get all clinicist plans
 const getAllClinicistPlans = async (req, res) => {
     try {
         const plans = await ClinicistPlan.find();
+        const formattedPlans = plans.map(plan => formatPlanPrice(plan));
         res.status(200).json({
             status: 'success',
-            body: plans,
+            body: formattedPlans,
             message: 'Clinicist plans retrieved successfully'
         });
     } catch (error) {
@@ -54,9 +62,10 @@ const getClinicistPlanById = async (req, res) => {
                 message: 'Clinicist plan not found'
             });
         }
+        const formattedPlan = formatPlanPrice(plan);
         res.status(200).json({
             status: 'success',
-            body: plan,
+            body: formattedPlan,
             message: 'Clinicist plan retrieved successfully'
         });
     } catch (error) {
@@ -124,9 +133,10 @@ const deleteClinicistPlan = async (req, res) => {
 const getActiveClinicistPlans = async (req, res) => {
     try {
         const activePlans = await ClinicistPlan.find({ active: true });
+        const formattedPlans = activePlans.map(plan => formatPlanPrice(plan));
         res.status(200).json({
             status: 'success',
-            body: activePlans,
+            body: formattedPlans,
             message: 'Active clinicist plans retrieved successfully'
         });
     } catch (error) {

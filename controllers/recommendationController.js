@@ -3,6 +3,7 @@ const s3Util = require('../utils/s3Util');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid'); // For generating unique file names
 const createNotification = require('../utils/createNotification');
+const Clinisist = require('../models/Clinisist');
 
 // Multer setup to handle file uploads
 const storage = multer.memoryStorage(); // Store files in memory temporarily
@@ -467,15 +468,41 @@ const deleteMedia = async (req, res) => {
 // Fetch recommendations for a clinician's subscribed patient
 const getRecommendationsForSubscribedPatient = async (req, res) => {
     try {
-        const clinicianId = req.clinisist._id; // Assuming clinician's ID is stored in req.clinisist._id
-        const patientId = req.params.patientId; // Taking patient ID from the route parameters
-        // Fetch recommendations for the specific patient recommended by the clinician
+        const clinicianId = req.clinisist._id;
+        const patientId = req.params.patientId;
+
+        // First fetch recommendations
         const recommendations = await Recommendation.find({
             recommendedBy: clinicianId,
             recommendedTo: patientId
-        }).populate('recommendedBy', 'name'); // Populate with clinician's name
+        });
 
-        if (recommendations.length === 0) {
+        // Get all unique clinician IDs from recommendations
+        const clinicianIds = [...new Set(recommendations.map(rec => rec.recommendedBy))];
+
+        // Fetch all clinician details in one query
+        const clinicians = await Clinisist.find({
+            '_id': { $in: clinicianIds }
+        }, 'name');
+
+        // Create a map of clinician IDs to names for quick lookup
+        const clinicianMap = clinicians.reduce((map, clinician) => {
+            map[clinician._id.toString()] = clinician.name;
+            return map;
+        }, {});
+
+        // Format recommendations with clinician names
+        const formattedRecommendations = recommendations.map(rec => {
+            const formatted = rec.toObject();
+            const clinicianId = rec.recommendedBy.toString();
+            formatted.recommendedBy = {
+                id: clinicianId,
+                name: clinicianMap[clinicianId] || 'Unknown Clinician'
+            };
+            return formatted;
+        });
+
+        if (formattedRecommendations.length === 0) {
             return res.json({
                 status: "success",
                 body: [],
@@ -485,7 +512,7 @@ const getRecommendationsForSubscribedPatient = async (req, res) => {
 
         res.json({
             status: "success",
-            body: recommendations,
+            body: formattedRecommendations,
             message: "Recommendations retrieved successfully for the patient"
         });
     } catch (error) {
@@ -501,15 +528,25 @@ const getRecommendationsForSubscribedPatient = async (req, res) => {
 // Fetch portal recommendations for a patient
 const getPortalRecommendationsForPatient = async (req, res) => {
     try {
-        const patientId = req.params.patientId; // Taking patient ID from the request body
+        const patientId = req.params.patientId;
 
-        // Fetch portal recommendations for the specific patient
+        // Fetch portal recommendations
         const portalRecommendations = await Recommendation.find({
             recommendedTo: patientId,
             type: 'portal'
-        }).populate('recommendedBy', 'name'); // Populate with clinician's name
+        });
 
-        if (portalRecommendations.length === 0) {
+        // Format recommendations with Admin as recommendedBy for portal type
+        const formattedRecommendations = portalRecommendations.map(rec => {
+            const formatted = rec.toObject();
+            formatted.recommendedBy = {
+                id: rec.recommendedBy,
+                name: 'Admin'
+            };
+            return formatted;
+        });
+
+        if (formattedRecommendations.length === 0) {
             return res.json({
                 status: "success",
                 body: [],
@@ -519,7 +556,7 @@ const getPortalRecommendationsForPatient = async (req, res) => {
 
         res.json({
             status: "success",
-            body: portalRecommendations,
+            body: formattedRecommendations,
             message: "Portal recommendations retrieved successfully for the patient"
         });
     } catch (error) {
@@ -537,12 +574,23 @@ const getPortalRecommendationsByRecommendedTo = async (req, res) => {
     try {
         const recommendedTo = req.params.recommendedTo;
 
+        // Fetch portal recommendations
         const portalRecommendations = await Recommendation.find({ 
             recommendedTo,
             type: 'portal'
-        }).populate('recommendedBy', 'name');
+        });
 
-        if (portalRecommendations.length === 0) {
+        // Format recommendations with Admin as recommendedBy for portal type
+        const formattedRecommendations = portalRecommendations.map(rec => {
+            const formatted = rec.toObject();
+            formatted.recommendedBy = {
+                id: rec.recommendedBy,
+                name: 'Admin'
+            };
+            return formatted;
+        });
+
+        if (formattedRecommendations.length === 0) {
             return res.json({
                 status: "success",
                 body: [],
@@ -552,7 +600,7 @@ const getPortalRecommendationsByRecommendedTo = async (req, res) => {
 
         res.json({
             status: "success",
-            body: portalRecommendations,
+            body: formattedRecommendations,
             message: "Portal recommendations retrieved successfully"
         });
     } catch (error) {
