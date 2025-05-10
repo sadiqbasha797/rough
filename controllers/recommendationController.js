@@ -256,15 +256,44 @@ const deleteRecommendation = async (req, res) => {
 const getDoctorRecommendations = async (req, res) => {
     try {
         const category = req.params.category;
-        const patientId = req.patient._id; // Assuming patient's ID is stored in req.patient._id after token authentication
+        const patientId = req.patient._id;
 
-        // Fetch recommendations of type 'doctor' for the specific patient and populate the recommendedBy field with the clinician's details
+        // Fetch recommendations of type 'doctor' for the specific patient
         const doctorRecommendations = await Recommendation.find({
             type: 'doctor',
             recommendedTo: patientId
-        }).populate('recommendedBy'); // Populate with Clinisist data
+        });
 
-        if (doctorRecommendations.length === 0) {
+        // Get all unique clinician IDs from recommendations
+        const clinicianIds = [...new Set(doctorRecommendations.map(rec => rec.recommendedBy))];
+
+        // Fetch all clinician details in one query
+        const clinicians = await Clinisist.find({
+            '_id': { $in: clinicianIds }
+        });
+
+        // Create a map of clinician IDs to their complete details for quick lookup
+        const clinicianMap = clinicians.reduce((map, clinician) => {
+            const clinicianObj = clinician.toObject();
+            map[clinician._id.toString()] = {
+                ...clinicianObj,
+                id: clinician._id // Ensure we keep the ID field
+            };
+            return map;
+        }, {});
+
+        // Format recommendations with complete clinician details
+        const formattedRecommendations = doctorRecommendations.map(rec => {
+            const formatted = rec.toObject();
+            const clinicianId = rec.recommendedBy.toString();
+            formatted.recommendedBy = clinicianMap[clinicianId] || {
+                id: clinicianId,
+                name: 'Unknown Clinician'
+            };
+            return formatted;
+        });
+
+        if (formattedRecommendations.length === 0) {
             return res.json({
                 status: "success",
                 body: [],
@@ -274,7 +303,7 @@ const getDoctorRecommendations = async (req, res) => {
 
         res.json({
             status: "success",
-            body: doctorRecommendations,
+            body: formattedRecommendations,
             message: "Doctor recommendations retrieved successfully for the patient"
         });
     } catch (error) {
@@ -483,21 +512,25 @@ const getRecommendationsForSubscribedPatient = async (req, res) => {
         // Fetch all clinician details in one query
         const clinicians = await Clinisist.find({
             '_id': { $in: clinicianIds }
-        }, 'name');
+        });
 
-        // Create a map of clinician IDs to names for quick lookup
+        // Create a map of clinician IDs to their complete details for quick lookup
         const clinicianMap = clinicians.reduce((map, clinician) => {
-            map[clinician._id.toString()] = clinician.name;
+            const clinicianObj = clinician.toObject();
+            map[clinician._id.toString()] = {
+                ...clinicianObj,
+                id: clinician._id // Ensure we keep the ID field
+            };
             return map;
         }, {});
 
-        // Format recommendations with clinician names
+        // Format recommendations with complete clinician details
         const formattedRecommendations = recommendations.map(rec => {
             const formatted = rec.toObject();
             const clinicianId = rec.recommendedBy.toString();
-            formatted.recommendedBy = {
+            formatted.recommendedBy = clinicianMap[clinicianId] || {
                 id: clinicianId,
-                name: clinicianMap[clinicianId] || 'Unknown Clinician'
+                name: 'Unknown Clinician'
             };
             return formatted;
         });
