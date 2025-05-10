@@ -500,11 +500,11 @@ const getRecommendationsForSubscribedPatient = async (req, res) => {
         const clinicianId = req.clinisist._id;
         const patientId = req.params.patientId;
 
-        // First fetch recommendations
+        // First fetch recommendations and sort by timestamp in descending order
         const recommendations = await Recommendation.find({
             recommendedBy: clinicianId,
             recommendedTo: patientId
-        });
+        }).sort({ timestamp: -1 }); // -1 for descending order (newest first)
 
         // Get all unique clinician IDs from recommendations
         const clinicianIds = [...new Set(recommendations.map(rec => rec.recommendedBy))];
