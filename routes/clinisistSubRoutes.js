@@ -24,6 +24,6 @@ router.post('/check-and-update-expired', checkAndUpdateExpiredSubscriptions);
 router.get('/counts', getClinicianSubscriptionCounts);
 router.get('/monthly-stats', getMonthlyClinicianSubscriptionStats);
 router.get('/clinician-subscriptions',clincistProtect, getClinicianSubscriptions);
-router.get('/check-previous-subscription/:id',  checkClinicianPreviousSubscription);
+router.get('/check-previous-subscription', clincistProtect, checkClinicianPreviousSubscription);
 module.exports = router;
 

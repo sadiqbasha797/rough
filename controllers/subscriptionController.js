@@ -419,7 +419,7 @@ const checkPatientClinicistSubscription = async (req, res) => {
 
 const checkPatientPreviousSubscription = async (req, res) => {
     try {
-        const patientId = req.params.id;
+        const patientId = req.patient._id;
         const previousSubscription = await Subscription.findOne({ patient: patientId });
         res.status(200).json({
             status: 'success',

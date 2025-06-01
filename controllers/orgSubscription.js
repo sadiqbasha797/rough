@@ -315,7 +315,7 @@ const getSubscriptionCounts = async (req, res) => {
 // Check if an organization has any previous subscription (active or expired)
 const checkOrganizationPreviousSubscription = async (req, res) => {
     try {
-        const organizationId = req.params.id;
+        const organizationId = req.organization._id;
         const previousSubscription = await OrgSubscription.findOne({ organization: organizationId });
         res.status(200).json({
             status: 'success',

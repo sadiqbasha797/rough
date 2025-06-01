@@ -79,5 +79,5 @@ router.get('/notifications', authOrganization, getNotifications);
 router.put('/update-image', authOrganization, upload.single('image'), updateOrganizationImage);
 router.put('/update-data', authOrganization, updateOrganizationData);
 router.put('/update-certificate', authOrganization, upload.single('certificate'), updateOrganizationCertificate);
-router.get('/check-previous-subscription/:id', require('../controllers/orgSubscription').checkOrganizationPreviousSubscription);
+router.get('/check-previous-subscription', authOrganization, require('../controllers/orgSubscription').checkOrganizationPreviousSubscription);
 module.exports = router;
