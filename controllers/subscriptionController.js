@@ -417,6 +417,23 @@ const checkPatientClinicistSubscription = async (req, res) => {
     }
 };
 
+const checkPatientPreviousSubscription = async (req, res) => {
+    try {
+        const patientId = req.params.id;
+        const previousSubscription = await Subscription.findOne({ patient: patientId });
+        res.status(200).json({
+            status: 'success',
+            body: { hasPreviousSubscription: !!previousSubscription },
+            message: !!previousSubscription ? 'Previous subscription found' : 'No previous subscription found'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error checking previous subscription'
+        });
+    }
+};
 
 module.exports = {
     createSubscription, 
@@ -424,5 +441,6 @@ module.exports = {
     getSubscribedClinicians,
     checkActiveSubscription,
     checkClinicistActiveSubscription,
-    checkPatientClinicistSubscription
+    checkPatientClinicistSubscription,
+    checkPatientPreviousSubscription
 };

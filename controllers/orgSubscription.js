@@ -312,6 +312,25 @@ const getSubscriptionCounts = async (req, res) => {
     }
 };
 
+// Check if an organization has any previous subscription (active or expired)
+const checkOrganizationPreviousSubscription = async (req, res) => {
+    try {
+        const organizationId = req.params.id;
+        const previousSubscription = await OrgSubscription.findOne({ organization: organizationId });
+        res.status(200).json({
+            status: 'success',
+            body: { hasPreviousSubscription: !!previousSubscription },
+            message: !!previousSubscription ? 'Previous subscription found' : 'No previous subscription found'
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            body: null,
+            message: 'Error checking previous subscription'
+        });
+    }
+};
+
 module.exports = {
     createOrgSubscription,
     getAllOrgSubscriptions,
@@ -320,5 +339,6 @@ module.exports = {
     deleteOrgSubscription,
     checkAndUpdateExpiredSubscriptions,
     manualCheckExpiredSubscriptions,
-    getSubscriptionCounts
+    getSubscriptionCounts,
+    checkOrganizationPreviousSubscription
 };

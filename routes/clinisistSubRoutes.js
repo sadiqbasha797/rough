@@ -10,7 +10,8 @@ const {
     checkAndUpdateExpiredSubscriptions,
     getClinicianSubscriptionCounts,
     getMonthlyClinicianSubscriptionStats,
-    getClinicianSubscriptions
+    getClinicianSubscriptions,
+    checkClinicianPreviousSubscription
    } = require('../controllers/clinicianSubscriptionController');
 const { clincistProtect } = require('../middleware/auth'); // Middleware to protect routes
 router.post('/create/:id', clincistProtect, createClinicianSubscription);
@@ -23,5 +24,6 @@ router.post('/check-and-update-expired', checkAndUpdateExpiredSubscriptions);
 router.get('/counts', getClinicianSubscriptionCounts);
 router.get('/monthly-stats', getMonthlyClinicianSubscriptionStats);
 router.get('/clinician-subscriptions',clincistProtect, getClinicianSubscriptions);
+router.get('/check-previous-subscription/:id',  checkClinicianPreviousSubscription);
 module.exports = router;
 

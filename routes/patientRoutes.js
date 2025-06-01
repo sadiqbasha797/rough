@@ -42,4 +42,5 @@ router.get('/mood-assessment/:type', patientProtect, getQuestionsByType);
 router.get('/count', getTotalPatients);
 router.get('/join-stats', getPatientJoinedStats);
 router.get('/:id', getPatientById);
+router.get('/check-previous-subscription/:id', require('../controllers/subscriptionController').checkPatientPreviousSubscription);
 module.exports = router;
