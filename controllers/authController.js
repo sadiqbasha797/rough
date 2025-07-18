@@ -200,14 +200,14 @@ const registerClinisist = async (req, res) => {
         console.log('Request body:', req.body);
         console.log('Request files:', req.files);
         
-        // Accept both 'userName' and 'username' from req.body
+        // Accept 'name', 'userName', or 'username' from req.body
         const { 
-            userName: camelUserName, username: lowerUserName, email, password, // required
+            name: plainName, userName: camelUserName, username: lowerUserName, email, password, // required
             mobile, dob, specializedIn, services, about,
             ratings, experience, location, careerpath, highlights,
             organization, degree, licenseNumber, licenseExpirationDate, npiNumber
         } = req.body;
-        const userName = camelUserName || lowerUserName;
+        const userName = plainName || camelUserName || lowerUserName;
 
         // Validate required fields
         if (!userName || !email || !password) {
