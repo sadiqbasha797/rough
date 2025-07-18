@@ -202,33 +202,36 @@ const registerClinisist = async (req, res) => {
         
         // Updated destructuring to use mobile instead of mobileNum
         const { 
-            userName, email, mobile, dob, password, specializedIn, services, about,
+            userName, email, password, // required
+            mobile, dob, specializedIn, services, about,
             ratings, experience, location, careerpath, highlights,
             organization, degree, licenseNumber, licenseExpirationDate, npiNumber
         } = req.body;
 
-        // Parse address separately
-        let address;
-        try {
-            address = typeof req.body.address === 'string' ? 
-                     JSON.parse(req.body.address) : 
-                     req.body.address;
-        } catch (error) {
-            console.error('Error parsing address:', error);
+        // Validate required fields
+        if (!userName || !email || !password) {
             return res.status(400).json({
                 status: 'error',
                 body: null,
-                message: 'Invalid address format'
+                message: 'Name, email, and password are required'
             });
         }
 
-        // Validate required fields
-        if (!email || !password) {
-            return res.status(400).json({
-                status: 'error',
-                body: null,
-                message: 'Email and password are required'
-            });
+        // Parse address only if present
+        let address = null;
+        if (req.body.address) {
+            try {
+                address = typeof req.body.address === 'string' ? 
+                         JSON.parse(req.body.address) : 
+                         req.body.address;
+            } catch (error) {
+                console.error('Error parsing address:', error);
+                return res.status(400).json({
+                    status: 'error',
+                    body: null,
+                    message: 'Invalid address format'
+                });
+            }
         }
 
         const clinisistExists = await Clinisist.findOne({ email });
@@ -277,34 +280,37 @@ const registerClinisist = async (req, res) => {
             }
         }
 
+        // Only include address if present
+        const addressObj = address ? {
+            latitude: address.latitude || null,
+            longitude: address.longitude || null,
+            location: address.location || null
+        } : undefined;
+
         const clinisist = await Clinisist.create({
             name: userName,
             email,
-            mobileNum: mobile,  // Map mobile to mobileNum in the database
-            dob,
+            mobileNum: mobile || null,  // Map mobile to mobileNum in the database
+            dob: dob || null,
             password: hashedPassword,
-            specializedIn,
-            address: {
-                latitude: address.latitude,
-                longitude: address.longitude,
-                location: address.location
-            },
-            services,
-            about,
+            specializedIn: specializedIn || "",
+            address: addressObj,
+            services: services || "",
+            about: about || "",
             image: imageUrl,
             licenseImage: licenseImageUrl,
             front_license: frontLicenseUrl,
             back_license: backLicenseUrl,
-            ratings,
-            experience,
-            location,
-            careerpath,
-            highlights,
-            organization,
-            degree,
-            licenseNumber,
-            licenseExpirationDate,
-            npiNumber,
+            ratings: ratings || "",
+            experience: experience || "",
+            location: location || "",
+            careerpath: careerpath || [],
+            highlights: highlights || "",
+            organization: organization || "",
+            degree: degree || "",
+            licenseNumber: licenseNumber || "",
+            licenseExpirationDate: licenseExpirationDate || "",
+            npiNumber: npiNumber || "",
             Active: 'yes'
         });
 
