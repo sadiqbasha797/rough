@@ -200,13 +200,14 @@ const registerClinisist = async (req, res) => {
         console.log('Request body:', req.body);
         console.log('Request files:', req.files);
         
-        // Updated destructuring to use mobile instead of mobileNum
+        // Accept both 'userName' and 'username' from req.body
         const { 
-            userName, email, password, // required
+            userName: camelUserName, username: lowerUserName, email, password, // required
             mobile, dob, specializedIn, services, about,
             ratings, experience, location, careerpath, highlights,
             organization, degree, licenseNumber, licenseExpirationDate, npiNumber
         } = req.body;
+        const userName = camelUserName || lowerUserName;
 
         // Validate required fields
         if (!userName || !email || !password) {
@@ -306,7 +307,7 @@ const registerClinisist = async (req, res) => {
             location: location || "",
             careerpath: careerpath || [],
             highlights: highlights || "",
-            organization: organization || "",
+            organization: organization || undefined,
             degree: degree || "",
             licenseNumber: licenseNumber || "",
             licenseExpirationDate: licenseExpirationDate || "",
