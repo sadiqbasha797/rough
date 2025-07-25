@@ -166,7 +166,12 @@ const showActivePlans = async (req, res) => {
 
 const getDoctorPlans = async (req, res) => {
     try {
-        const doctorPlans = await Plan.find({ planType: 'doctor-plan', status: 'Active' });
+        let query = { planType: 'doctor-plan' };
+        // If admin is accessing, show both active and inactive plans
+        if (!req.admin) {
+            query.status = 'Active';
+        }
+        const doctorPlans = await Plan.find(query);
         const formattedPlans = doctorPlans.map(plan => ({
             ...plan.toObject(),
             price: formatPrice(plan.price)
